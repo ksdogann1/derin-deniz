@@ -1,0 +1,38 @@
+DERİN DENİZ  (deneme sürümü 0.7)
+
+Çalıştırmak: DerinDeniz.exe dosyasına çift tıkla. Kurulum gerekmez.
+Windows "Bilgisayarınız korundu" derse: "Ek bilgi" > "Yine de çalıştır".
+
+ARKADAŞINLA OYNAMAK
+Önemli: İkiniz de AYNI SÜRÜMÜ (0.7) kullanın.
+
+Aynı evde / aynı Wi-Fi'de:
+  1. Biri "Dünya Kur ve Oyna" der. Windows Güvenlik Duvarı sorarsa "İzin ver"
+     (özel ve ortak ağ kutularının ikisini de işaretle).
+  2. Diğerinin menüsünde, sağdaki "Aynı ağdaki dünyalar" listesinde dünya kendiliğinden
+     görünür. Tıkla, gir. Telefon ile bilgisayar da böyle birlikte oynar.
+
+Farklı evlerde (en kolay yol):
+  1. İkiniz de Radmin VPN kurun (ücretsiz): radmin-vpn.com
+  2. Biriniz "Ağ" > "Yeni ağ oluştur" (ad + şifre), diğeri "Mevcut ağa katıl".
+  3. Kurucu "Dünya Kur ve Oyna" der. Diğerinin listesinde dünya görünür.
+     Görünmezse kurucunun Radmin'de yazan 26.x.x.x adresini elle yazın.
+  Oyun ayrıca modemde portu otomatik açmayı dener (UPnP); sonucu ve internet adresini
+  kurucunun Esc menüsünde yazar. Ama birçok internet sağlayıcısında bu yetmez,
+  Radmin VPN her zaman çalışır.
+
+KONTROLLER
+  WASD yüz · sol tık kır / yakala · sağ tık koy · 1-9 hotbar
+  E envanter ve üretim (Minecraft gibi 3x3 ızgara + tarif kitabı)
+  K ansiklopedi · M harita · T oyuncular ve takas
+  Enter sohbet · Esc menü ve ayarlar
+
+YENİ (0.7)
+  Takas: T > oyuncunun yanında Takas. İkiniz de onaylayınca değiş tokuş olur.
+  Harita: M. Gezdiğin yerler açılır, sağ üstte mini harita.
+  Ayarlar: kalite ön ayarı, kare hızı (FPS) sınırı, VSync, tam ekran, ışık/parçacık
+  ayrıntıları, arayüz boyutu. Bilgisayar zorlanırsa Ayarlar > Görüntü > Düşük.
+  24 tür canlı, yeni gerçekçi çizimler. Dikkat: mavi köpekbalığı ısırır!
+
+Kayıtlar: %APPDATA%\DerinDeniz\worlds
+Godot Engine ile yapıldı (MIT lisansı): https://godotengine.org/license

@@ -4,6 +4,14 @@ Su altında geçen 2D çok oyunculu keşif ve koleksiyon oyunu.
 Derine dal, nadir canlıları yakala, oksijenin bitmeden geri dön, üssünü kur.
 Godot 4.7 (GDScript).
 
+
+## İndir
+
+| | |
+|---|---|
+| **Windows** | [DerinDeniz-Windows.zip indir](https://github.com/ksdogann1/derin-deniz/releases/latest/download/DerinDeniz-Windows.zip) — klasöre çıkar, `DerinDeniz.exe`'ye çift tıkla |
+| **iPhone / tarayıcı** | [ksdogann1.github.io/derin-deniz](https://ksdogann1.github.io/derin-deniz/) — Safari'de aç, Paylaş > Ana Ekrana Ekle |
+
 ## Çalıştırma
 
 1. Godot 4.7'yi indir: https://godotengine.org/download (normal sürüm, .NET değil).

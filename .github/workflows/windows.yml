@@ -1,0 +1,70 @@
+# Windows sürümünü derleyip "Releases" sayfasına koyar. Sabit indirme linki:
+#   https://github.com/ksdogann1/derin-deniz/releases/latest/download/DerinDeniz-Windows.zip
+name: Windows sürümü
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  GODOT_VERSION: 4.7.2
+
+jobs:
+  windows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Godot ve şablonları indir
+        run: |
+          set -e
+          V=$GODOT_VERSION
+          BASE=https://github.com/godotengine/godot/releases/download/${V}-stable
+          curl -sSL -o godot.zip "$BASE/Godot_v${V}-stable_linux.x86_64.zip"
+          unzip -q godot.zip -d "$RUNNER_TEMP/godot"
+          curl -sSL -o templates.tpz "$BASE/Godot_v${V}-stable_export_templates.tpz"
+          T="$HOME/.local/share/godot/export_templates/${V}.stable"
+          mkdir -p "$T"
+          unzip -q -j templates.tpz templates/web_nothreads_release.zip templates/web_nothreads_debug.zip \
+            templates/windows_release_x86_64.exe templates/windows_debug_x86_64.exe \
+            templates/windows_release_x86_64_console.exe templates/windows_debug_x86_64_console.exe \
+            templates/version.txt -d "$T"
+          rm -f godot.zip templates.tpz
+          echo "GODOT=$RUNNER_TEMP/godot/Godot_v${V}-stable_linux.x86_64" >> "$GITHUB_ENV"
+
+      - name: Tarayıcı sürümünü içine koy (iPhone'daki arkadaşlara sunmak için)
+        run: |
+          set -e
+          mkdir -p build/web
+          "$GODOT" --headless --path . --import || true
+          "$GODOT" --headless --path . --export-release "Web" build/web/index.html
+          python3 tools/pack_web.py
+          "$GODOT" --headless --path . --import || true
+
+      - name: Windows exe
+        run: |
+          set -e
+          "$GODOT" --headless --path . --export-release "Windows Desktop" build/DerinDeniz.exe
+          test -f build/DerinDeniz.exe
+          mkdir -p paket/DerinDeniz
+          cp build/DerinDeniz.exe dagitim/BENİOKU.txt paket/DerinDeniz/
+          (cd paket && zip -qr ../DerinDeniz-Windows.zip DerinDeniz)
+          ls -la DerinDeniz-Windows.zip
+          echo "SURUM=$(grep -oP 'config/version="\K[^"]+' project.godot)" >> "$GITHUB_ENV"
+
+      - name: Releases sayfasına koy
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: surum-son
+          name: "Derin Deniz (en son sürüm)"
+          body: |
+            **Windows:** DerinDeniz-Windows.zip dosyasını indir, klasöre çıkar, DerinDeniz.exe'ye çift tıkla.
+            **iPhone:** Safari'de https://ksdogann1.github.io/derin-deniz/ aç, Paylaş > Ana Ekrana Ekle.
+
+            Sürüm ${{ env.SURUM }} · derleme ${{ github.sha }}
+          files: DerinDeniz-Windows.zip
+          make_latest: true
