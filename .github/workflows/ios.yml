@@ -1,0 +1,77 @@
+# iPhone sürümünü (IPA) GitHub'ın bulut Mac'inde derler.
+# Her "main" güncellemesinde ya da Actions sekmesinden "Run workflow" ile çalışır.
+# Çıkan IPA imzasızdır; Sideloadly kendi Apple hesabınla imzalayıp telefona kurar.
+name: iPhone IPA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  GODOT_VERSION: 4.7.2
+
+jobs:
+  ipa:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Godot ve iOS şablonunu indir
+        run: |
+          set -e
+          V=$GODOT_VERSION
+          BASE=https://github.com/godotengine/godot/releases/download/${V}-stable
+          curl -sSL -o godot.zip "$BASE/Godot_v${V}-stable_macos.universal.zip"
+          unzip -q godot.zip -d "$RUNNER_TEMP/godot"
+          curl -sSL -o templates.tpz "$BASE/Godot_v${V}-stable_export_templates.tpz"
+          T="$HOME/Library/Application Support/Godot/export_templates/${V}.stable"
+          mkdir -p "$T"
+          unzip -q -j templates.tpz templates/ios.zip templates/version.txt -d "$T"
+          rm -f godot.zip templates.tpz
+          echo "GODOT=$RUNNER_TEMP/godot/Godot.app/Contents/MacOS/Godot" >> "$GITHUB_ENV"
+
+      - name: Xcode projesini çıkar
+        run: |
+          set -e
+          mkdir -p build/ios
+          "$GODOT" --headless --path . --import || true
+          "$GODOT" --headless --path . --export-release "iOS" build/ios/DerinDeniz.ipa
+          test -d build/ios/DerinDeniz.xcodeproj
+
+      - name: Derle (imzasız)
+        run: |
+          set -e
+          xcodebuild -project build/ios/DerinDeniz.xcodeproj -scheme DerinDeniz \
+            -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build/dd \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" \
+            build | tail -n 40
+          APP=build/dd/Build/Products/Release-iphoneos/DerinDeniz.app
+          test -d "$APP"
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -qry DerinDeniz.ipa Payload
+          ls -la DerinDeniz.ipa
+
+      - name: Dosyayı sakla
+        uses: actions/upload-artifact@v4
+        with:
+          name: DerinDeniz-iPhone
+          path: DerinDeniz.ipa
+
+      - name: İndirme sayfasına koy (Releases)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: iphone-son
+          name: "iPhone sürümü (en son)"
+          body: |
+            DerinDeniz.ipa dosyasını indir, Sideloadly ile telefona kur.
+            Derleme: ${{ github.sha }}
+          files: DerinDeniz.ipa
+          prerelease: false
+          make_latest: true
