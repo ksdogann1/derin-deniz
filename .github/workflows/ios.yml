@@ -21,6 +21,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: En yeni Xcode'u seç
+        run: |
+          ls -d /Applications/Xcode*.app
+          X=$(ls -d /Applications/Xcode_*.app | grep -v beta | sort -V | tail -1)
+          echo "Seçilen: $X"
+          sudo xcode-select -s "$X/Contents/Developer"
+          xcodebuild -version
+
       - name: Godot ve iOS şablonunu indir
         run: |
           set -e
@@ -50,7 +58,7 @@ jobs:
             -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
             -derivedDataPath build/dd \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" \
-            build > xcodebuild.log 2>&1 || { grep -nE "error|fatal" xcodebuild.log | head -80; tail -80 xcodebuild.log; exit 1; }
+            build > xcodebuild.log 2>&1 || { xcodebuild -version >> xcodebuild.log; ls -d /Applications/Xcode*.app >> xcodebuild.log; grep -nE "error|fatal" xcodebuild.log | head -80; tail -80 xcodebuild.log; exit 1; }
           APP=$(find build/dd/Build/Products -maxdepth 2 -name "*.app" -type d | head -1)
           echo "APP=$APP"
           ls -la "$APP"
