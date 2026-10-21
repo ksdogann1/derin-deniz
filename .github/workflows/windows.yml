@@ -51,7 +51,7 @@ jobs:
           "$GODOT" --headless --path . --export-release "Windows Desktop" build/DerinDeniz.exe
           test -f build/DerinDeniz.exe
           mkdir -p paket/DerinDeniz
-          cp build/DerinDeniz.exe dagitim/BENİOKU.txt paket/DerinDeniz/
+          cp build/DerinDeniz.exe dagitim/BENIOKU.txt paket/DerinDeniz/
           (cd paket && zip -qr ../DerinDeniz-Windows.zip DerinDeniz)
           ls -la DerinDeniz-Windows.zip
           echo "SURUM=$(grep -oP 'config/version="\K[^"]+' project.godot)" >> "$GITHUB_ENV"
