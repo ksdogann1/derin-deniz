@@ -69,8 +69,8 @@ func _finish() -> void:
 
 
 func _run() -> void:
-	var peer := ENetMultiplayerPeer.new()
-	if peer.create_client("127.0.0.1", port) != OK:
+	var peer := NetTools.client_peer("127.0.0.1", port)
+	if peer == null:
 		print("[%s] FAIL  istemci oluşturulamadı" % role)
 		quit(1)
 		return

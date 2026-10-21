@@ -166,7 +166,7 @@ static func apply() -> void:
 	_set_bus(BUS_MUSIC, music)
 	_set_bus(BUS_AMB, ambience)
 	Engine.max_fps = fps_limit
-	var headless := DisplayServer.get_name() == "headless"
+	var headless := DisplayServer.get_name() == "headless" or OS.has_feature("web")
 	if not headless:
 		DisplayServer.window_set_vsync_mode(
 			DisplayServer.VSYNC_ENABLED if vsync else DisplayServer.VSYNC_DISABLED)

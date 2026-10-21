@@ -1,0 +1,64 @@
+# Tarayıcı sürümünü derleyip GitHub Pages'a koyar:
+#   https://ksdogann1.github.io/derin-deniz/
+# iPhone'da Safari ile açılır, "Ana Ekrana Ekle" ile uygulama gibi durur.
+name: Web sürümü
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: 4.7.2
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Godot ve web şablonunu indir
+        run: |
+          set -e
+          V=$GODOT_VERSION
+          BASE=https://github.com/godotengine/godot/releases/download/${V}-stable
+          curl -sSL -o godot.zip "$BASE/Godot_v${V}-stable_linux.x86_64.zip"
+          unzip -q godot.zip -d "$RUNNER_TEMP/godot"
+          curl -sSL -o templates.tpz "$BASE/Godot_v${V}-stable_export_templates.tpz"
+          T="$HOME/.local/share/godot/export_templates/${V}.stable"
+          mkdir -p "$T"
+          unzip -q -j templates.tpz templates/web_nothreads_release.zip templates/web_nothreads_debug.zip templates/version.txt -d "$T"
+          rm -f godot.zip templates.tpz
+          echo "GODOT=$RUNNER_TEMP/godot/Godot_v${V}-stable_linux.x86_64" >> "$GITHUB_ENV"
+
+      - name: Web sürümünü çıkar
+        run: |
+          set -e
+          mkdir -p build/web
+          "$GODOT" --headless --path . --import || true
+          "$GODOT" --headless --path . --export-release "Web" build/web/index.html
+          test -f build/web/index.wasm
+          ls -la build/web
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

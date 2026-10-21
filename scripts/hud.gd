@@ -588,6 +588,8 @@ func connection_text() -> String:
 		lines.append("  •  %s   (internet, UPnP ile açıldı)" % hi.ext)
 	lines.append(str(hi.get("upnp", "")))
 	lines.append("Aynı ağdakiler menüdeki listede seni kendiliğinden görür.")
+	if bool(hi.get("web", false)) and (hi.ips as PackedStringArray).size() > 0:
+		lines.append("iPhone / tarayıcı (aynı Wi-Fi): Safari'de  http://%s:%d  aç." % [hi.ips[0], NetTools.WEB_PORT])
 	return "\n".join(lines)
 
 

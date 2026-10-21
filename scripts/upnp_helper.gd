@@ -24,7 +24,7 @@ func _work() -> void:
 	if err != UPNP.UPNP_RESULT_SUCCESS or upnp.get_gateway() == null or not upnp.get_gateway().is_valid_gateway():
 		_done.call_deferred(false, "", "Modem otomatik port açmayı (UPnP) desteklemiyor ya da kapalı.")
 		return
-	var r1 := upnp.add_port_mapping(port, port, "Derin Deniz", "UDP")
+	var r1 := upnp.add_port_mapping(port, port, "Derin Deniz", "TCP")
 	var ext := upnp.query_external_address()
 	if r1 != UPNP.UPNP_RESULT_SUCCESS:
 		_done.call_deferred(false, ext, "Modem portu açmayı reddetti (UPnP hata %d)." % r1)
@@ -51,4 +51,4 @@ func _exit_tree() -> void:
 	if _thread != null and _thread.is_started():
 		_thread.wait_to_finish()
 	if _upnp != null:
-		_upnp.delete_port_mapping(port, "UDP")
+		_upnp.delete_port_mapping(port, "TCP")

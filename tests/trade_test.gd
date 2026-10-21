@@ -67,8 +67,8 @@ func _count(id: int) -> int:
 
 
 func _run() -> void:
-	var peer := ENetMultiplayerPeer.new()
-	if peer.create_client("127.0.0.1", port) != OK:
+	var peer := NetTools.client_peer("127.0.0.1", port)
+	if peer == null:
 		check("istemci oluşturuldu", false)
 		_finish()
 		return

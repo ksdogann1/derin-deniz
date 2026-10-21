@@ -4,11 +4,44 @@ extends RefCounted
 
 const GAME_PORT := 7777
 const DISCOVERY_PORT := 7778
+const WEB_PORT := 8080               # kurucu, tarayıcı sürümünü bu porttan sunar
 const MAGIC_QUERY := "DERINDENIZ?"
 const MAGIC_REPLY := "DERINDENIZ!"
 
 
 static var version_override := ""     # yalnızca testler için
+
+
+## Bağlantı WebSocket üzerinden (TCP). Tarayıcı sürümü de aynı sunucuya bağlanabilsin diye
+## ENet yerine bu kullanılıyor.
+static func server_peer(port: int) -> MultiplayerPeer:
+	var peer := WebSocketMultiplayerPeer.new()
+	if peer.create_server(port) != OK:
+		return null
+	return peer
+
+
+static func client_peer(addr: String, port: int) -> MultiplayerPeer:
+	var peer := WebSocketMultiplayerPeer.new()
+	if peer.create_client("ws://%s:%d" % [addr, port]) != OK:
+		return null
+	return peer
+
+
+static func is_web() -> bool:
+	return OS.has_feature("web")
+
+
+## Tarayıcıda: sayfa bir kurucunun bilgisayarından (http://192.168.x.x:8080) mı açıldı?
+## Öyleyse o adresi döndürür, yoksa "".
+static func web_lan_host() -> String:
+	if not is_web():
+		return ""
+	var proto := str(JavaScriptBridge.eval("window.location.protocol", true))
+	var host := str(JavaScriptBridge.eval("window.location.hostname", true))
+	if proto != "http:" or host == "" or host == "localhost" or host == "127.0.0.1":
+		return ""
+	return host
 
 
 static func version() -> String:

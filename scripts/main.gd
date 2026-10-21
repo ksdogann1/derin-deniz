@@ -28,6 +28,9 @@ var _lan_list: VBoxContainer
 var _lan: LanDiscovery             # menüde: ağdaki dünyaları arar
 var _responder: LanDiscovery       # kurucuyken: aramalara cevap verir
 var _upnp: UpnpHelper
+var _web_host: WebHost
+var _quit_btn: Button
+var _tip_lbl: Label
 var _joining := false
 var _join_time := 0.0
 var _join_target := ""
@@ -76,10 +79,13 @@ func _ready() -> void:
 		return
 
 	_build_menu()
-	_lan = LanDiscovery.new()
-	add_child(_lan)
-	_lan.servers_changed.connect(_refresh_lan)
-	_lan.start_browser()
+	if not NetTools.is_web():
+		_lan = LanDiscovery.new()
+		add_child(_lan)
+		_lan.servers_changed.connect(_refresh_lan)
+		_lan.start_browser()
+	else:
+		_setup_web_menu()
 	_name_edit.text = pname
 	_world_edit.text = wname
 	if args.has("host"):
@@ -188,6 +194,7 @@ func _build_menu() -> void:
 	set_btn.pressed.connect(func(): _menu_settings.visible = true)
 	bottom.add_child(set_btn)
 	var quit_btn := Button.new()
+	_quit_btn = quit_btn
 	quit_btn.text = "Çık"
 	quit_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	quit_btn.pressed.connect(func(): get_tree().quit())
@@ -224,11 +231,11 @@ func _build_menu() -> void:
 	join_btn.custom_minimum_size = Vector2(0, 44)
 	join_btn.pressed.connect(func(): _start_join(_addr_edit.text.strip_edges(), _get_port(), _name_edit.text))
 	jbox.add_child(join_btn)
-	var tip := UiTheme.label("Farklı evlerdeyseniz: ikiniz de Radmin VPN kurup aynı ağa girin; dünya burada kendiliğinden görünür.",
+	_tip_lbl = UiTheme.label("Farklı evlerdeyseniz: ikiniz de Radmin VPN kurup aynı ağa girin; dünya burada kendiliğinden görünür.",
 		12, UiTheme.MUTED)
-	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	tip.custom_minimum_size = Vector2(370, 0)
-	jbox.add_child(tip)
+	_tip_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tip_lbl.custom_minimum_size = Vector2(370, 0)
+	jbox.add_child(_tip_lbl)
 	_refresh_lan()
 
 	_menu_settings = SettingsPanel.new()
@@ -299,13 +306,18 @@ func _set_status(text: String) -> void:
 # --------------------------------------------------------------------------
 
 func _start_host(port: int, pname: String, wname: String) -> void:
-	var peer := ENetMultiplayerPeer.new()
-	var err := peer.create_server(port, MAX_CLIENTS)
-	if err != OK:
+	var peer: MultiplayerPeer
+	if NetTools.is_web():
+		# tarayıcı sunucu olamaz: tek başına oyun
+		peer = OfflineMultiplayerPeer.new()
+	else:
+		peer = NetTools.server_peer(port)
+	if peer == null:
 		_set_status("Sunucu kurulamadı (port %d kullanımda olabilir)." % port)
 		return
 	multiplayer.multiplayer_peer = peer
-	print("[Sunucu] %d portunda dinleniyor" % port)
+	if not NetTools.is_web():
+		print("[Sunucu] %d portunda dinleniyor" % port)
 	_host_port = port
 	if _lan != null:
 		_lan.stop()
@@ -317,9 +329,8 @@ func _start_join(addr: String, port: int, pname: String) -> void:
 	if addr.is_empty():
 		_set_status("Sunucu adresi gir.")
 		return
-	var peer := ENetMultiplayerPeer.new()
-	var err := peer.create_client(addr, port)
-	if err != OK:
+	var peer := NetTools.client_peer(addr, port)
+	if peer == null:
 		_set_status("Bağlantı başlatılamadı.")
 		return
 	multiplayer.multiplayer_peer = peer
@@ -353,6 +364,8 @@ func _fail_text() -> String:
 
 
 func _start_host_services(port: int, pname: String) -> void:
+	if NetTools.is_web():
+		return
 	_responder = LanDiscovery.new()
 	add_child(_responder)
 	_responder.start_server(func():
@@ -360,7 +373,12 @@ func _start_host_services(port: int, pname: String) -> void:
 			"players": _world.player_count() if _world != null else 0})
 	if _world != null:
 		_world.host_info = {"ips": NetTools.local_ipv4s(), "port": port,
-			"upnp": "Modemde port açılmaya çalışılıyor…", "ext": ""}
+			"upnp": "Modemde port açılmaya çalışılıyor…", "ext": "",
+			"web": WebHost.available()}
+	if WebHost.available():
+		_web_host = WebHost.new()
+		add_child(_web_host)
+		_web_host.start(NetTools.WEB_PORT)
 	if not OS.has_feature("editor_hint"):
 		_upnp = UpnpHelper.new()
 		_upnp.port = port
@@ -374,6 +392,9 @@ func _start_host_services(port: int, pname: String) -> void:
 
 
 func _stop_host_services() -> void:
+	if _web_host != null:
+		_web_host.queue_free()
+		_web_host = null
 	if _responder != null:
 		_responder.queue_free()
 		_responder = null
@@ -401,8 +422,33 @@ func reject(msg: String) -> void:
 	_leave(msg)
 
 
+## Tarayıcıda: otomatik bulma yok. Sayfa bir kurucudan açıldıysa onun adresi hazır gelir.
+func _setup_web_menu() -> void:
+	_quit_btn.visible = false
+	_tip_lbl.visible = false
+	_port_edit.text = str(NetTools.GAME_PORT)
+	var host := NetTools.web_lan_host()
+	for c in _lan_list.get_children():
+		c.queue_free()
+	if host != "":
+		_addr_edit.text = host
+		var b := Button.new()
+		b.text = "Kurucunun dünyasına katıl (%s)" % host
+		b.custom_minimum_size = Vector2(0, 48)
+		b.pressed.connect(func(): _start_join(host, NetTools.GAME_PORT, _name_edit.text))
+		_lan_list.add_child(b)
+		_set_status("Adını yaz, sonra \"Kurucunun dünyasına katıl\"a bas.")
+	else:
+		var l := UiTheme.label("Tarayıcı sürümü: \"Dünya Kur ve Oyna\" ile tek başına oynarsın (internetsiz de çalışır).\n" +
+			"Arkadaşınla oynamak için: aynı Wi-Fi'de, kurucunun Esc menüsünde yazan http:// adresini Safari'de aç.",
+			13, Color(1, 1, 1, 0.6))
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.custom_minimum_size = Vector2(370, 0)
+		_lan_list.add_child(l)
+
+
 func _refresh_lan() -> void:
-	if _lan_list == null:
+	if _lan_list == null or NetTools.is_web():
 		return
 	for c in _lan_list.get_children():
 		c.queue_free()

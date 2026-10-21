@@ -71,8 +71,7 @@ func _quest_type() -> String:
 
 func _run() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SaveStore.path_for(WORLD)))
-	var peer := ENetMultiplayerPeer.new()
-	peer.create_server(7805, 4)
+	var peer := NetTools.server_peer(7805)
 	get_multiplayer().multiplayer_peer = peer
 	var main := Node.new()
 	main.name = "Main"
