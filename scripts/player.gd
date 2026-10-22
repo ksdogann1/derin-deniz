@@ -257,7 +257,11 @@ func _physics_process(delta: float) -> void:
 func _process(delta: float) -> void:
 	_label.visible = Settings.show_names
 	if is_local and _camera != null and not is_equal_approx(_camera.zoom.x, Settings.zoom):
-		_camera.zoom = Vector2(Settings.zoom, Settings.zoom)
+		# yumuşak yakınlaştırma
+		var z := lerpf(_camera.zoom.x, Settings.zoom, minf(1.0, delta * 14.0))
+		if absf(z - Settings.zoom) < 0.005:
+			z = Settings.zoom
+		_camera.zoom = Vector2(z, z)
 	if _bubble_time > 0.0:
 		var bs := _bubble_label.get_combined_minimum_size()
 		_bubble_label.size = bs
@@ -397,9 +401,16 @@ func _update_interaction(delta: float) -> void:
 	_lmb_prev = lmb
 	_rmb_prev = rmb
 
-	# Canlı yakalama: fare bir canlının üstündeyse tıklama yakalama denemesidir
+	# Canlı yakalama: fare bir canlının üstündeyse tıklama yakalama denemesidir.
+	# Basış bir bloğun üstünde başladıysa, yanından canlı geçse bile kırma sürer
+	# (yoksa mağara tabanındaki yengeçler sandık kırmayı sürekli sıfırlıyordu).
 	var cid: int = world.wildlife.creature_at(mouse, 14.0 if tc != null else 11.0)
-	if cid >= 0 and world.wildlife.view_pos(cid).distance_to(position) <= world.CATCH_RANGE * TILE:
+	var creature_ok: bool = cid >= 0 and world.wildlife.view_pos(cid).distance_to(position) <= world.CATCH_RANGE * TILE
+	if lmb_down:
+		_press_on_creature = creature_ok
+	if lmb and not _press_on_creature and not lmb_down:
+		creature_ok = false
+	if creature_ok:
 		world.hover_creature = cid
 		world.hover_ok = false
 		_reset_mining()
@@ -452,6 +463,9 @@ func _update_interaction(delta: float) -> void:
 				and (not Blocks.is_solid(item) or not _overlaps_self(cell)):
 			world.request_place(cell, world.selected_slot)
 			_place_cooldown = 0.12
+
+
+var _press_on_creature := false
 
 
 func _touch() -> TouchControls:

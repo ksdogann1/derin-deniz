@@ -396,12 +396,14 @@ def ell(cv, cx, cy, rx, ry, c_top, c_bot, alpha=255, light=0.25):
                 cv.put(x, y, c)
 
 
-def jelly(frame, glow=False):
+def jelly(frame, glow=False, colors=None):
     W, H = 32, 44
     cv = Canvas(W, H)
     rx = [12.0, 10.8, 9.6, 10.8][frame]
     ry = [8.0, 9.0, 10.0, 9.0][frame]
     top, bot = ("#ff9ad8", "#c04898") if not glow else ("#b8c8ff", "#5a62e0")
+    if colors:
+        top, bot = colors
     # dokunaçlar
     for i, tx in enumerate((9, 12, 15, 18, 21, 24)):
         for y in range(int(10 + ry * 0.5), H - 1):
@@ -459,11 +461,14 @@ def seahorse(frame):
     return cv
 
 
-def octopus(frame):
+def octopus(frame, colors=None):
     W, H = 40, 36
     cv = Canvas(W, H)
     sq = [0.0, 0.5, 1.0, 0.5][frame]
-    top, bot = "#e0607e", "#8a2448"
+    top, bot = colors[:2] if colors else ("#e0607e", "#8a2448")
+    mantle = colors[2] if colors else "#f58ea4"
+    spot = colors[3] if colors else "#b83a5a"
+    line = colors[4] if colors else "#3a0a1a"
     for i in range(8):
         base = 9 + i * 3.1
         for k in range(18):
@@ -476,7 +481,7 @@ def octopus(frame):
                 cv.put(int(x + d), y, c)
             if k % 3 == 1 and k < 15:
                 cv.put(int(x + th), y, col("#ffd0dc"))     # vantuz
-    ell(cv, 20, 10 + sq, 11 - sq, 9 + sq * 0.6, "#f58ea4", bot, light=0.4)
+    ell(cv, 20, 10 + sq, 11 - sq, 9 + sq * 0.6, mantle, bot, light=0.4)
     # gözler
     for ex in (15, 25):
         ell(cv, ex, 14 + sq, 2.4, 2.0, "#fff4c0", "#e8d890")
@@ -486,8 +491,8 @@ def octopus(frame):
     rnd = random.Random(4)
     for _ in range(10):
         x, y = rnd.randint(12, 28), rnd.randint(4, 12)
-        cv.put(x, int(y + sq), col("#b83a5a"))
-    _outline(cv, col("#3a0a1a"))
+        cv.put(x, int(y + sq), col(spot))
+    _outline(cv, col(line))
     return cv
 
 
@@ -542,37 +547,38 @@ def squid(frame, giant=False):
     return cv
 
 
-def eel(frame):
-    W, H = 64, 24
+def eel(frame, colors=None, W=64, H=24, amp=4.0):
     cv = Canvas(W, H)
-    dark, mid, light = col("#14240f"), col("#2f5022"), col("#5a8a3c")
+    c3 = colors or ("#14240f", "#2f5022", "#5a8a3c", "#e6e04a", "#060c04")
+    dark, mid, light = col(c3[0]), col(c3[1]), col(c3[2])
     pts = []
-    for x in range(2, 54):
-        y = 12 + math.sin(x * 0.2 + frame * math.pi / 2) * 4.0 * (x / 54 + 0.3)
+    for x in range(2, W - 10):
+        y = H / 2 + math.sin(x * 0.2 + frame * math.pi / 2) * amp * (x / (W - 10) + 0.3)
         pts.append((x, y))
     for i, (x, y) in enumerate(pts):
-        th = 2.0 + 2.6 * math.sin(math.pi * min(1, (i + 4) / 58))
+        th = 2.0 + 2.6 * math.sin(math.pi * min(1, (i + 4) / (W - 6)))
         for dy in range(int(-th), int(th) + 1):
             v = (dy + th) / (2 * th)
             c = mix(light, dark, v) if v > 0.4 else mix(light, mid, 1 - v / 0.4)
             cv.put(int(x), int(round(y + dy)), c)
         if i % 6 == 3:
-            cv.put(int(x), int(round(y - 1)), col("#e6e04a"))
+            cv.put(int(x), int(round(y - 1)), col(c3[3]))
             cv.put(int(x) + 1, int(round(y)), col("#c8c030"))
     hx, hy = pts[-1]
-    ell(cv, hx + 3, hy, 5.0, 3.6, "#5a8a3c", "#14240f")
+    ell(cv, hx + 3, hy, 5.0, 3.6, c3[2], c3[0])
     cv.set(int(hx) + 5, int(hy) - 1, col("#ff4040"))
     for x in range(int(hx) + 3, int(hx) + 8):
         cv.put(x, int(hy) + 1, col("#0a1408"))
-    _outline(cv, col("#060c04"))
+    _outline(cv, col(c3[4]))
     return cv
 
 
-def turtle(frame):
+def turtle(frame, shell=None):
     W, H = 52, 32
     cv = Canvas(W, H)
     fl = [(-2, 2), (0, 0), (2, -2), (0, 0)][frame]
-    skin = ("#9ab57a", "#4a5a3a")
+    sh = shell or ("#86b04a", "#2b3a1a", "#3a5020", "#9ab57a", "#4a5a3a", "#16200d")
+    skin = (sh[3], sh[4])
     # yüzgeçler
     for (bx, by, ang, ln) in ((33, 20, 30 + fl[0] * 12, 15), (15, 21, 150 + fl[1] * 10, 9)):
         for i in range(ln):
@@ -583,17 +589,17 @@ def turtle(frame):
             for d in range(int(-w), int(w) + 1):
                 cv.put(int(x), int(y + d), col(skin[0] if d < 0 else skin[1]))
     # kabuk
-    ell(cv, 24, 15, 15, 9, "#86b04a", "#2b3a1a", light=0.35)
+    ell(cv, 24, 15, 15, 9, sh[0], sh[1], light=0.35)
     # kabuk plakaları
     for (cx, cy) in ((18, 12), (24, 10), (30, 12), (21, 16), (27, 16), (15, 16), (33, 16)):
         for a in range(0, 360, 30):
             cv.put(int(cx + math.cos(math.radians(a)) * 3), int(cy + math.sin(math.radians(a)) * 2),
-                   col("#3a5020", 200))
+                   col(sh[2], 200))
     # baş
     ell(cv, 42, 12, 5.2, 3.8, skin[0], skin[1])
     cv.set(44, 11, col("#101010"))
     cv.set(46, 13, col("#2a3a1a"))
-    _outline(cv, col("#16200d"))
+    _outline(cv, col(sh[5]))
     return cv
 
 
@@ -626,11 +632,11 @@ def crab(frame):
     return cv
 
 
-def stingray(frame):
+def stingray(frame, colors=None):
     W, H = 64, 32
     cv = Canvas(W, H)
     wave = [0.0, 1.0, 0.0, -1.0][frame]
-    top, bot = "#7a6a58", "#3a3024"
+    top, bot = colors or ("#7a6a58", "#3a3024")
     # kuyruk
     for x in range(2, 24):
         y = 17 + math.sin(x * 0.3 + frame) * 1.2
@@ -652,6 +658,241 @@ def stingray(frame):
     cv.set(50, 19, col("#101010"))
     _outline(cv, col("#1a140c"))
     return cv
+
+
+
+# --- v0.8 yeni türler
+FISH_SPECS.update({
+    "levrek": dict(nose=1.0, W=56, H=28, length=42, height=9, peak=0.5, snout=0.35, dorsal="#4a5c66", side="#a8b8c0",
+                   ventral="#eef2f4", fin="#6a7c86", tail="fork", tail_size=10, dorsal_spiky=True,
+                   dorsal_fins=[(0.5, 0.68, 0.7), (0.22, 0.45, 0.55)], anal_fins=[(0.15, 0.35, 0.45)],
+                   spots=8, spot_color="#3a4a54", eye=2.2, mouth=5, mouth_v=0.6, seed=21),
+    "uskumru": dict(nose=1.1, W=52, H=24, length=40, height=7, peak=0.5, snout=0.3, dorsal="#1e6a5a", side="#9ac8c0",
+                    ventral="#f2f6f6", fin="#3a6a60", tail="fork", tail_size=9,
+                    dorsal_fins=[(0.55, 0.7, 0.6), (0.25, 0.42, 0.45)], anal_fins=[(0.2, 0.35, 0.4)],
+                    vstripes=[(x / 10.0, 1.5, "#0e3a30") for x in range(2, 8)], eye=2.0, seed=22),
+    "kirlangic": dict(nose=0.7, W=52, H=36, length=38, height=10, peak=0.6, snout=0.6, dorsal="#b83020",
+                      side="#e86a4a", ventral="#ffd2c0", fin="#e05a3a", tail="fork", tail_size=8,
+                      dorsal_fins=[(0.55, 0.75, 0.8), (0.2, 0.5, 0.5)], anal_fins=[(0.15, 0.45, 0.4)],
+                      pec=2.2, pec_at=0.66, pec_color="#3a8ae0", eye=2.4, eye_v=0.3, seed=23),
+    "papagan": dict(nose=0.6, W=52, H=34, length=38, height=12, peak=0.55, snout=0.7, dorsal="#1a8a6a",
+                    side="#3ac8a0", ventral="#a0f0d8", fin="#e05a9a", tail="lunate", tail_size=9,
+                    dorsal_fins=[(0.15, 0.85, 0.35)], anal_fins=[(0.15, 0.55, 0.35)],
+                    hstripes=[(0.5, 0.05, "#ff8ac0", 0.3, 0.95)], mottle="#f0a0d0", eye=2.4, mouth=3, seed=24),
+    "melek": dict(nose=0.6, W=48, H=72, length=30, height=19, peak=0.5, snout=0.55, dorsal="#2050c0",
+                  side="#3a8af0", ventral="#ffe040", fin="#ffd020", tail="truncate", tail_size=8, stalk=0.45,
+                  dorsal_fins=[(0.3, 0.75, 0.7)], anal_fins=[(0.3, 0.7, 0.7)],
+                  vstripes=[(0.75, 2.0, "#ffe680"), (0.45, 2.0, "#ffe680")], eye=2.4, scales=False, lateral=False,
+                  seed=25),
+    "aslan": dict(nose=0.7, W=60, H=64, length=34, height=11, cy=38, peak=0.55, snout=0.6, dorsal="#8a2a1a",
+                  side="#e0a080", ventral="#fff0e0", fin="#f0d0c0", fin_alpha=230, tail="round", tail_size=9,
+                  dorsal_fins=[(0.2, 0.8, 1.8)], dorsal_spiky=True, anal_fins=[(0.15, 0.4, 0.9)],
+                  pec=2.6, pec_at=0.66, pec_color="#e8b8a0",
+                  vstripes=[(x / 9.0, 2.2, "#7a1a0a") for x in range(1, 9)], eye=2.2, scales=False,
+                  lateral=False, seed=26),
+    "lambuka": dict(nose=0.4, W=64, H=36, length=48, height=11, peak=0.7, snout=0.9, hump=1.25,
+                    dorsal="#1a9a6a", side="#5ad0a0", ventral="#ffe24a", fin="#3ab0e0", tail="fork", tail_size=11,
+                    dorsal_fins=[(0.15, 0.95, 0.55)], anal_fins=[(0.15, 0.5, 0.45)], spots=12,
+                    spot_color="#1a5ab0", eye=2.4, seed=27),
+    "ton": dict(nose=1.1, W=80, H=40, length=60, height=13, peak=0.5, snout=0.3, dorsal="#14244a", side="#7088a8",
+                ventral="#e8eef4", fin="#e0c030", tail="lunate", tail_size=14,
+                dorsal_fins=[(0.55, 0.68, 0.6), (0.35, 0.48, 0.7)], anal_fins=[(0.3, 0.42, 0.6)],
+                hstripes=[(0.48, 0.03, "#c8d0e0", 0.2, 0.85)], eye=2.6, scales=False, seed=28),
+    "cekic": dict(nose=1.5, W=100, H=44, length=72, height=10, peak=0.55, snout=0.25, dorsal="#5a6470",
+                  side="#8a949e", ventral="#eef0f2", fin="#5a6470", fin_alpha=255, tail="shark", tail_size=18,
+                  dorsal_fins=[(0.5, 0.62, 1.8), (0.18, 0.22, 0.5)], anal_fins=[(0.2, 0.25, 0.5)], pec=1.6,
+                  pec_at=0.62, eye=1.6, eye_at=0.97, gill=0.74, mouth=6, mouth_v=0.75, scales=False,
+                  lateral=False, seed=29),
+    "engerek": dict(nose=0.8, W=56, H=36, length=40, height=8, peak=0.6, snout=0.8, dorsal="#0c1420",
+                    side="#1a2c40", ventral="#2a4060", fin="#16243a", tail="fork", tail_size=7,
+                    dorsal_fins=[(0.75, 0.8, 1.5)], anal_fins=[(0.1, 0.25, 0.6)], spots=16, spot_color="#4ae0ff",
+                    eye=2.4, iris="#bfefff", mouth=12, mouth_v=0.62, scales=False, lateral=False, seed=30),
+    "gokkusagi": dict(nose=0.75, W=52, H=32, length=38, height=11, peak=0.55, snout=0.45, dorsal="#7a2ad0",
+                      side="#30c0ff", ventral="#fff8d0", fin="#ff60c0", fin_alpha=230, tail="lunate", tail_size=11,
+                      dorsal_fins=[(0.2, 0.8, 0.7)], anal_fins=[(0.2, 0.55, 0.6)],
+                      vstripes=[(0.2, 4.6, "#ff4a4a"), (0.32, 4.6, "#ff9a2a"), (0.44, 4.6, "#ffe03a"),
+                                (0.56, 4.6, "#4ae06a"), (0.68, 4.6, "#3aa0ff"), (0.8, 4.6, "#9a5aff")],
+                      eye=2.4, iris="#ffffff", seed=31),
+    "hayalet_kopekbaligi": dict(nose=1.5, W=96, H=40, length=72, height=10, peak=0.55, snout=0.25,
+                                dorsal="#c8e8ff", side="#e4f4ff", ventral="#ffffff", fin="#b0dcff", fin_alpha=170,
+                                tail="shark", tail_size=18, dorsal_fins=[(0.48, 0.6, 1.5), (0.18, 0.22, 0.5)],
+                                anal_fins=[(0.2, 0.25, 0.5)], pec=1.6, pec_at=0.62, eye=1.8, eye_at=0.86,
+                                iris="#7af0ff", gill=0.74, mouth=8, mouth_v=0.72, scales=False, lateral=False, seed=32),
+})
+
+
+def ghostify(cv, alpha=175):
+    """Yarı saydam, parlak kenarlı görünüm"""
+    for y in range(cv.h):
+        for x in range(cv.w):
+            c = cv.get(x, y)
+            if c[3] > 0:
+                cv.set(x, y, (min(255, c[0] + 10), min(255, c[1] + 15), 255, min(c[3], alpha)))
+
+
+def hammer_extras(cv):
+    """Çekiç baş: başın iki yanına uzanan kanat"""
+    W, H = cv.w, cv.h
+    hx = int(W * 0.84)
+    for y in range(int(H * 0.16), int(H * 0.84)):
+        k = abs(y - H / 2) / (H * 0.34)
+        w = 5 - int(k * 2)
+        for x in range(hx - w, hx + 2):
+            cv.put(x, y, col("#5a6470" if y < H / 2 else "#8a949e"))
+    for y in (int(H * 0.18), int(H * 0.81)):
+        cv.set(hx - 1, y, col("#101010"))
+        cv.set(hx - 2, y, col("#e8e0a0"))
+    _outline(cv, col("#20262e"))
+
+
+def viper_extras(cv, frame):
+    """Engerek balığı: uzun dişler ve ışıklı yem"""
+    W, H = cv.w, cv.h
+    for i, x in enumerate(range(int(W * 0.72), int(W * 0.86), 3)):
+        for k in range(4 if i % 2 == 0 else 3):
+            cv.set(x, int(H * 0.56) + k, col("#e8f0f4"))
+    bx, by = int(W * 0.66), int(H * 0.2)
+    for k in range(8):
+        cv.set(bx + k // 3, by - k, col("#16243a"))
+    g = [255, 200, 150, 200][frame]
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            cv.set(bx + 2 + dx, by - 9 + dy, col("#9af6ff", g))
+
+
+def rainbow_shimmer(cv, frame):
+    """Gökkuşağı balığı: pullarda dönen parıltı"""
+    for y in range(cv.h):
+        for x in range(cv.w):
+            c = cv.get(x, y)
+            if c[3] > 200 and (x + y * 2 + frame * 3) % 11 == 0:
+                cv.set(x, y, (255, 255, 255, 255))
+
+
+def starfish(frame):
+    W, H = 32, 24
+    cv = Canvas(W, H)
+    wig = [0, 0.15, 0, -0.15][frame]
+    cx, cy = 16, 14
+    for a in range(5):
+        ang = math.radians(-90 + a * 72) + wig * (1 if a % 2 else -1)
+        for k in range(11):
+            r = 1.0 + k
+            w = 3.2 - k * 0.27
+            x = cx + math.cos(ang) * r
+            y = cy + math.sin(ang) * r * 0.62
+            ell(cv, x, y, max(1.0, w), max(1.0, w * 0.75), "#ff9a4a", "#c8461a", light=0.3)
+    for a in range(5):
+        ang = math.radians(-90 + a * 72)
+        for k in range(2, 10, 2):
+            cv.put(int(cx + math.cos(ang) * k), int(cy + math.sin(ang) * k * 0.62), col("#ffe0b0"))
+    _outline(cv, col("#5a1a06"))
+    return cv
+
+
+def lobster(frame):
+    W, H = 52, 28
+    cv = Canvas(W, H)
+    step = [0, 1, 0, -1][frame]
+    dark, mid, light = "#6a1410", "#b8301e", "#e86040"
+    # kuyruk segmentleri (solda)
+    for i in range(5):
+        ell(cv, 8 + i * 4, 17, 3.2, 3.2 - i * 0.1, light, dark)
+    for k in range(-3, 4):
+        cv.put(4, 17 + k, col(mid))
+        cv.put(3, 17 + k * 1.2, col(light))
+    # gövde
+    ell(cv, 30, 16, 9, 5.5, light, dark, light=0.35)
+    # bacaklar
+    for i, bx in enumerate((24, 28, 32, 36)):
+        k = step * (1 if i % 2 else -1)
+        for j in range(5):
+            cv.put(bx + (k if j > 2 else 0), 20 + j, col(dark))
+    # kıskaçlar
+    for s, yy in ((-1, 9), (1, 21)):
+        for j in range(6):
+            cv.put(38 + j, int(16 + s * (2 + j * 0.4)), col(dark))
+        ell(cv, 46, yy + step * 0.4, 4.5, 2.8, light, dark)
+        cv.put(50, int(yy + step * 0.4), col("#2a0604"))
+    # antenler
+    for j in range(16):
+        cv.put(38 + j, int(13 - j * 0.45), col(mid, 220))
+        cv.put(38 + j, int(12 - j * 0.3), col(mid, 200))
+    cv.set(37, 13, col("#101010"))
+    _outline(cv, col("#2a0604"))
+    return cv
+
+
+def seadragon(frame, golden=True):
+    """Yapraklı deniz ejderi: kıvrık gövde, yaprak benzeri çıkıntılar"""
+    W, H = 52, 36
+    cv = Canvas(W, H)
+    bob = [0, 0.5, 1, 0.5][frame]
+    top, bot, leaf = ("#ffd860", "#c07a10", "#ff9a3a") if golden else ("#9ad060", "#4a7a20", "#c0e070")
+    pts = []
+    for i in range(40):
+        t = i / 39
+        x = 6 + t * 40
+        y = 18 + math.sin(t * 5.0 + frame * 0.6) * 4 + bob
+        pts.append((x, y))
+    for i, (x, y) in enumerate(pts):
+        th = 1.2 + 2.6 * math.sin(math.pi * min(1, (i + 3) / 40))
+        ell(cv, x, y, 1.6, th, top, bot, light=0.3)
+        if i % 6 == 2:
+            sgn = -1 if (i // 6) % 2 == 0 else 1
+            for k in range(7):
+                lx = x + math.sin(k * 0.6 + frame) * 1.5
+                ly = y + sgn * (th + k)
+                cv.put(int(lx), int(ly), col(leaf, 230 - k * 18))
+                cv.put(int(lx) + 1, int(ly), col(leaf, 200 - k * 18))
+    hx, hy = pts[-1]
+    ell(cv, hx + 1, hy - 1, 3.4, 2.6, top, bot)
+    for x in range(int(hx) + 3, int(hx) + 9):
+        cv.set(x, int(hy - 1), col(bot))
+    cv.set(int(hx) + 1, int(hy - 2), col("#101010"))
+    _outline(cv, col("#4a2a04" if golden else "#1a3008"))
+    return cv
+
+
+def oarfish(frame):
+    """Kürek balığı: çok uzun gümüş şerit gövde, kırmızı sırt yüzgeci ve tepelik"""
+    W, H = 128, 32
+    cv = Canvas(W, H)
+    pts = []
+    for x in range(4, W - 10):
+        t = x / (W - 10)
+        y = H / 2 + math.sin(x * 0.11 + frame * math.pi / 2) * 4.5 * (1.1 - t)
+        pts.append((x, y))
+    for i, (x, y) in enumerate(pts):
+        th = 1.0 + 3.6 * min(1.0, (i + 2) / 30)
+        for dy in range(int(-th), int(th) + 1):
+            v = (dy + th) / (2 * th)
+            c = mix(col("#f0f4f8"), col("#8a98a8"), v)
+            if (i + dy * 3) % 9 == 0:
+                c = col("#3a4a5a")
+            cv.put(int(x), int(round(y + dy)), c)
+        # sırt yüzgeci
+        cv.put(int(x), int(round(y - th - 1)), col("#e02a2a", 220))
+        if i % 2 == 0:
+            cv.put(int(x), int(round(y - th - 2)), col("#ff5a4a", 180))
+    hx, hy = pts[-1]
+    ell(cv, hx + 3, hy, 5.0, 4.0, "#f8fafc", "#9aa8b6")
+    cv.set(int(hx) + 5, int(hy) - 1, col("#101010"))
+    for k in range(8):
+        cv.put(int(hx) + 1 - k // 2, int(hy - 5 - k), col("#ff3a3a", 230 - k * 15))
+    _outline(cv, col("#2a3440"))
+    return cv
+
+
+def crystal(cv, frame):
+    """Kristal parıltıları"""
+    rnd = random.Random(77 + frame)
+    for _ in range(10):
+        x, y = rnd.randint(4, cv.w - 5), rnd.randint(2, cv.h // 2)
+        if cv.alpha(x, y) > 0:
+            cv.set(x, y, (255, 255, 255, 255))
+            cv.put(x + 1, y, (200, 255, 255, 200))
+            cv.put(x, y + 1, (200, 255, 255, 200))
 
 
 # --------------------------------------------------------------------------
@@ -692,4 +933,39 @@ def build_all():
     out["kaplumbaga"] = sheet([turtle(f) for f in range(4)])
     out["yengec"] = sheet([crab(f) for f in range(4)])
     out["vatoz"] = sheet([stingray(f) for f in range(4)])
+    # v0.8
+    for name in ("levrek", "uskumru", "kirlangic", "papagan", "melek", "aslan", "lambuka", "ton", "cekic", "engerek",
+                 "gokkusagi", "hayalet_kopekbaligi"):
+        spec = FISH_SPECS[name]
+        frames = []
+        for f in range(FRAMES):
+            cv = fish(spec, f, spec["W"], spec["H"])
+            if name == "cekic":
+                shark_extras(cv)
+                hammer_extras(cv)
+            elif name == "engerek":
+                viper_extras(cv, f)
+            elif name == "gokkusagi":
+                rainbow_shimmer(cv, f)
+            elif name == "hayalet_kopekbaligi":
+                shark_extras(cv)
+                ghostify(cv)
+            frames.append(cv)
+        out[name] = sheet(frames)
+    out["deniz_yildizi"] = sheet([starfish(f) for f in range(4)])
+    out["istakoz"] = sheet([lobster(f) for f in range(4)])
+    out["manta"] = sheet([stingray(f, ("#2a3440", "#0c1218")) for f in range(4)])
+    out["kurek"] = sheet([oarfish(f) for f in range(4)])
+    kj = []
+    for f in range(4):
+        cv = jelly(f, colors=("#e8fbff", "#7ad8f0"))
+        crystal(cv, f)
+        kj.append(cv)
+    out["kristal_denizanasi"] = sheet(kj)
+    out["kraken"] = sheet([octopus(f, ("#9a4ae0", "#3a1070", "#c08aff", "#ff6af0", "#14042a")) for f in range(4)])
+    out["ejder"] = sheet([seadragon(f) for f in range(4)])
+    out["altin_kaplumbaga"] = sheet([turtle(f, ("#ffd24a", "#a06a08", "#7a4a04", "#ffe08a", "#b0801a", "#3a2402"))
+                                     for f in range(4)])
+    out["abis_yilani"] = sheet([eel(f, ("#1a0830", "#4a1a8a", "#9a5aff", "#5af0ff", "#08020f"), W=96, H=28, amp=5.0)
+                                for f in range(4)])
     return out

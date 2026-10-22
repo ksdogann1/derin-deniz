@@ -47,6 +47,10 @@ static var show_bubbles := true
 static var vibration := true
 static var minimap := true
 
+const ZOOM_MIN := 1.3
+const ZOOM_MAX := 5.0
+static var _zoom_save_at := -1
+
 static var revision := 0
 static var _loaded := false
 
@@ -179,6 +183,23 @@ static func apply() -> void:
 			if DisplayServer.window_get_mode() != want:
 				DisplayServer.window_set_mode(want)
 	revision += 1
+
+
+## Growtopia tarzı yakınlaştırma (tekerlek, +/-, iki parmak). Kaydı biraz geciktirir.
+static func set_zoom(z: float) -> void:
+	zoom = clampf(z, ZOOM_MIN, ZOOM_MAX)
+	_zoom_save_at = Time.get_ticks_msec() + 1500
+
+
+static func zoom_by(factor: float) -> void:
+	set_zoom(zoom * factor)
+
+
+## Bekleyen yakınlık kaydını yap (dünya her karede çağırır)
+static func tick() -> void:
+	if _zoom_save_at > 0 and Time.get_ticks_msec() >= _zoom_save_at:
+		_zoom_save_at = -1
+		save()
 
 
 static func changed() -> void:

@@ -58,6 +58,9 @@ var _minimap: MapView
 var _players_panel: PanelContainer
 var _players_list: VBoxContainer
 var _invite: PanelContainer
+var _gold_lbl: Label
+var _boat_btn: Button
+var _boat_win: BoatWindow
 var _invite_lbl: Label
 var _invite_from := -1
 var _invite_time := 0.0
@@ -108,7 +111,7 @@ func _ready() -> void:
 	_root.add_child(_info_lbl)
 
 	_help = UiTheme.label(
-		"WASD yüz · Sol tık kır / yakala · Sağ tık koy · 1-9 seç · E envanter · K ansiklopedi · M harita · T takas · Enter sohbet · Esc menü",
+		"WASD yüz · Sol tık kır / yakala · Sağ tık koy · Tekerlek yakınlaştır · E envanter · B tekne · K ansiklopedi · M harita · T takas · Esc menü",
 		12, Color(1, 1, 1, 0.45))
 	_help.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	_help.offset_left = 14
@@ -124,6 +127,22 @@ func _ready() -> void:
 	_root.add_child(_fps_lbl)
 	_build_trade_ui()
 	_build_map_ui()
+	_boat_btn = Button.new()
+	_boat_btn.text = "Teknem (B)"
+	_boat_btn.custom_minimum_size = Vector2(168, 52)
+	_boat_btn.add_theme_font_size_override("font_size", 19)
+	# hotbar'ın sağında: dünyaya tıklamayı engellemesin
+	_boat_btn.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_boat_btn.offset_left = 276
+	_boat_btn.offset_right = 444
+	_boat_btn.offset_top = -66
+	_boat_btn.offset_bottom = -14
+	_boat_btn.visible = false
+	_boat_btn.pressed.connect(toggle_boat)
+	_root.add_child(_boat_btn)
+	_boat_win = BoatWindow.new()
+	_boat_win.world = world
+	_root.add_child(_boat_win)
 	_build_quest_card()
 	_build_pause()
 	_settings = SettingsPanel.new()
@@ -183,6 +202,18 @@ func _build_stats() -> void:
 	var sp := Control.new()
 	sp.custom_minimum_size = Vector2(12, 0)
 	row.add_child(sp)
+	var coin := TextureRect.new()
+	coin.texture = load("res://assets/coin.png")
+	coin.custom_minimum_size = Vector2(20, 20)
+	coin.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	coin.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	coin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(coin)
+	_gold_lbl = UiTheme.label("0", 16, UiTheme.GOLD)
+	row.add_child(_gold_lbl)
+	var sp3 := Control.new()
+	sp3.custom_minimum_size = Vector2(12, 0)
+	row.add_child(sp3)
 	row.add_child(_icon(Blocks.TANK_UPGRADE, 20))
 	_tank_lbl = UiTheme.label("Tüp 0/3", 14, UiTheme.MUTED)
 	row.add_child(_tank_lbl)
@@ -607,7 +638,7 @@ func _apply_scale() -> void:
 
 func any_panel_open() -> bool:
 	return _inv.visible or _codex.visible or _aq_panel.visible or _pause.visible or _settings.visible \
-		or _trade_win.visible or _players_panel.visible or _map_panel.visible
+		or _trade_win.visible or _players_panel.visible or _map_panel.visible or _boat_win.visible
 
 
 ## Esc ya da Android geri tuşu
@@ -619,6 +650,7 @@ func back() -> void:
 	elif any_panel_open():
 		_players_panel.visible = false
 		_map_panel.visible = false
+		_boat_win.visible = false
 		_inv.close_window()
 		_codex.visible = false
 		_aq_panel.visible = false
@@ -716,6 +748,26 @@ func add_chat(sender: String, text: String, color: Color) -> void:
 	_rebuild_chat()
 
 
+func toggle_boat() -> void:
+	if _boat_win.visible:
+		_boat_win.visible = false
+		return
+	if near_boat():
+		_inv.close_window()
+		_boat_win.open()
+	else:
+		toast("Teknene git: yüzeyde, üstünde adın yazan tekne.")
+
+
+func near_boat() -> bool:
+	return world.boats_view != null and world.boats_view.near_own(world.local_player())
+
+
+## Dokunmatikte bu noktada bir HUD düğmesi var mı (dünyaya dokunma sayılmasın)
+func ui_button_at(pos: Vector2) -> bool:
+	return _boat_btn.visible and _boat_btn.get_global_rect().has_point(pos)
+
+
 func toggle_craft() -> void:
 	_inv.toggle()
 
@@ -750,6 +802,9 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif k == KEY_M:
 		toggle_map()
+		get_viewport().set_input_as_handled()
+	elif k == KEY_B:
+		toggle_boat()
 		get_viewport().set_input_as_handled()
 
 
@@ -786,6 +841,9 @@ func _process(delta: float) -> void:
 	_apply_scale()
 	_fps_lbl.visible = Settings.show_fps
 	var busy := any_panel_open()
+	_boat_btn.visible = not busy and not loading and near_boat()
+	if not world.inventory.is_empty():
+		_gold_lbl.text = str(int(world.inventory.get("gold", 0)))
 	_minimap.visible = Settings.minimap and not loading and not busy
 	if Settings.show_fps:
 		_fps_lbl.text = "%d FPS" % Engine.get_frames_per_second()

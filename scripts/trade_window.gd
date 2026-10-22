@@ -6,6 +6,8 @@ var world: Node            # World
 var _title: Label
 var _status: Label
 var _ready_btn: Button
+var _gold_spin: SpinBox
+var _gold_lbl: Label
 var _single := false
 
 
@@ -53,6 +55,19 @@ func _ready() -> void:
 	single.text = "Tek tek ekle"
 	single.toggled.connect(func(on): _single = on)
 	row.add_child(single)
+	row.add_child(UiTheme.label("Altın", 14, UiTheme.GOLD))
+	_gold_spin = SpinBox.new()
+	_gold_spin.min_value = 0
+	_gold_spin.max_value = 999999
+	_gold_spin.custom_minimum_size = Vector2(120, 0)
+	row.add_child(_gold_spin)
+	var gb := Button.new()
+	gb.text = "Teklife koy"
+	gb.custom_minimum_size = Vector2(0, 44)
+	gb.pressed.connect(func(): world.trade.offer_gold(int(_gold_spin.value)))
+	row.add_child(gb)
+	_gold_lbl = UiTheme.label("", 14, UiTheme.GOLD)
+	v.add_child(_gold_lbl)
 	v.add_child(HSeparator.new())
 	v.add_child(UiTheme.label("Envanterin: eşyaya tıkla, teklife eklensin (sol tık: yığın, sağ tık: 1 adet)", 13,
 		UiTheme.MUTED))
@@ -103,3 +118,6 @@ func refresh(st: Dictionary) -> void:
 	_ready_btn.text = "Onaylandı ✓  (geri al)" if mine_ok else "Onayla"
 	_status.text = ("%s onayladı ✓" % st.other_name) if their_ok else ("%s henüz onaylamadı" % st.other_name)
 	_status.add_theme_color_override("font_color", UiTheme.GOOD if their_ok else UiTheme.MUTED)
+	_gold_spin.max_value = maxi(0, int(world.inventory.get("gold", 0)))
+	_gold_lbl.text = "Altın:  sen %d  ·  %s %d" % [int(st.get("my_gold", 0)), st.get("other_name", "?"),
+		int(st.get("their_gold", 0))]

@@ -50,6 +50,19 @@ func _draw() -> void:
 			draw_string(font, Vector2(dst.position.x + 6, y - 4), "%s  ·  %d m" % [WorldGen.layer_name(row), row],
 				HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1, 1, 1, 0.55))
 
+	# sonar (tekne geliştirmesi): nadir canlılar
+	if world.economy != null:
+		var pulse := 0.6 + 0.4 * sin(Time.get_ticks_msec() * 0.006)
+		for e in world.economy.sonar:
+			var cc: Vector2 = (e[0] as Vector2) / 16.0
+			if not src.has_point(cc):
+				continue
+			var rr := int(Species.get_def(int(e[1])).get("rarity", 0))
+			var col: Color = Species.RARITY_COLORS[clampi(rr, 0, Species.RARITY_COLORS.size() - 1)]
+			var pp := dst.position + (cc - src.position) * sc
+			draw_circle(pp, (3.0 if mini else 4.0) * pulse + 1.0, Color(col, 0.9))
+			draw_arc(pp, 7.0 * pulse + 2.0, 0, TAU, 16, Color(col, 0.5), 1.0)
+
 	# oyuncular
 	for n in world.players():
 		var pl := n as Player

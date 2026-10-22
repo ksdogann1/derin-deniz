@@ -46,6 +46,8 @@ var sfx: Sfx
 var wildlife: Wildlife
 var trade: Trade
 var map: WorldMap
+var economy: Economy
+var boats_view: Boats
 var _aq_nodes := {}                  # Vector2i -> Sprite2D
 var _layer: TileMapLayer
 var _wall_layer: TileMapLayer
@@ -106,6 +108,13 @@ func _ready() -> void:
 	trade = Trade.new()
 	trade.world = self
 	add_child(trade)
+	economy = Economy.new()
+	economy.world = self
+	add_child(economy)
+	if not dedicated:
+		boats_view = Boats.new()
+		boats_view.world = self
+		add_child(boats_view)
 	if not dedicated:
 		map = WorldMap.new()
 		map.world = self
@@ -171,6 +180,7 @@ func _exit_tree() -> void:
 
 
 func _process(delta: float) -> void:
+	Settings.tick()
 	if _is_server and loaded:
 		_autosave -= delta
 		if _autosave <= 0.0:
@@ -270,7 +280,17 @@ func cell_center(c: Vector2i) -> Vector2:
 	return Vector2(c) * TILE + Vector2(TILE, TILE) * 0.5
 
 
-func spawn_pos() -> Vector2:
+func spawn_pos(peer: int = -1) -> Vector2:
+	# kendi teknesinin yanında doğar
+	if peer == -1:
+		peer = multiplayer.get_unique_id()
+	var b: Dictionary = economy.boats.get(peer, {}) if economy != null else {}
+	if not b.is_empty():
+		return Vector2((float(b.x) + 0.5) * TILE + 20.0, Player.SURFACE_Y + 4.0)
+	if _inventories.has(peer):
+		var bx := int(((_inventories[peer] as Dictionary).get("boat", {}) as Dictionary).get("x", -1))
+		if bx >= 0:
+			return Vector2((float(bx) + 0.5) * TILE + 20.0, Player.SURFACE_Y + 4.0)
 	return Vector2(cell_center(WorldGen.spawn_cell()).x, Player.SURFACE_Y + 4.0)
 
 
@@ -484,12 +504,25 @@ func _unhandled_input(event: InputEvent) -> void:
 		var k := (event as InputEventKey).physical_keycode
 		if k >= KEY_1 and k <= KEY_9:
 			selected_slot = k - KEY_1
+		elif k == KEY_EQUAL or k == KEY_KP_ADD:
+			Settings.zoom_by(1.15)
+		elif k == KEY_MINUS or k == KEY_KP_SUBTRACT:
+			Settings.zoom_by(1.0 / 1.15)
 	elif event is InputEventMouseButton and event.pressed:
 		var mb := event as InputEventMouseButton
+		# Growtopia gibi: tekerlek yakınlaştırır; Shift + tekerlek hotbar'da gezer
 		if mb.button_index == MOUSE_BUTTON_WHEEL_UP:
-			selected_slot = (selected_slot + n - 1) % n
+			if mb.shift_pressed:
+				selected_slot = (selected_slot + n - 1) % n
+			else:
+				Settings.zoom_by(1.1)
 		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			selected_slot = (selected_slot + 1) % n
+			if mb.shift_pressed:
+				selected_slot = (selected_slot + 1) % n
+			else:
+				Settings.zoom_by(1.0 / 1.1)
+	elif event is InputEventMagnifyGesture:
+		Settings.zoom_by((event as InputEventMagnifyGesture).factor)
 
 
 # --------------------------------------------------------------------------
@@ -507,6 +540,7 @@ func _load_or_generate() -> void:
 		_seed = int(data.get("seed", 0))
 		_saved_players = data.get("players", {})
 		aquariums = data.get("aquariums", {})
+		economy.load_data(data.get("market", {}))
 		print("[Sunucu] '%s' dünyası yüklendi" % world_name)
 		return
 	_seed = int(Time.get_ticks_usec() % 1000000)
@@ -531,7 +565,7 @@ func save_now() -> void:
 		_saved_players[_names[peer]] = _player_record(peer)
 	var ok := SaveStore.save_world(world_name, {
 		"seed": _seed, "cells": cells, "walls": walls, "players": _saved_players,
-		"aquariums": aquariums})
+		"aquariums": aquariums, "market": economy.save_data()})
 	if ok:
 		print("[Sunucu] Kaydedildi: %s" % SaveStore.path_for(world_name))
 
@@ -584,11 +618,15 @@ func _register_player(peer: int, pname: String, color: Color) -> void:
 	_quests[peer] = (rec.get("quest", Quests.new_state()) as Dictionary).duplicate(true)
 	_bags[peer] = []
 	_joined[peer] = true
+	Economy.ensure(_inventories[peer])
+	if int(_inventories[peer].boat.x) < 0:
+		_inventories[peer].boat.x = economy._free_slot()
 	print("[Sunucu] %s katıldı (id %d)" % [clean, peer])
 	for target in _joined.keys():
 		if target != 1:
-			spawn_player.rpc_id(target, peer, clean, spawn_pos(), color)
-	spawn_player(peer, clean, spawn_pos(), color)
+			spawn_player.rpc_id(target, peer, clean, spawn_pos(peer), color)
+	spawn_player(peer, clean, spawn_pos(peer), color)
+	economy.on_join(peer)
 	_send_inventory(peer)
 	_send_player_data(peer)
 	_ensure_random_quest(peer)
@@ -646,6 +684,7 @@ func _on_peer_disconnected(peer: int) -> void:
 	for target in _joined.keys():
 		if target != 1:
 			remove_player.rpc_id(target, peer)
+	economy.on_leave(peer)
 	_broadcast_chat("", "%s ayrıldı" % pname, 0, Color(0.6, 0.9, 1.0))
 
 
@@ -775,6 +814,52 @@ func inv_autofill(ri: int) -> void:
 		req_autofill.rpc_id(1, ri)
 
 
+## Basit envanter: iki yuvayı değiştir / çantayı sırala / yığını at
+func inv_swap(a: int, b: int) -> void:
+	if _is_server:
+		_server_inv_op(1, "swap", a, b)
+	else:
+		Inventory.swap(inventory, a, b)
+		req_inv_op.rpc_id(1, "swap", a, b)
+
+
+func inv_sort() -> void:
+	if _is_server:
+		_server_inv_op(1, "sort", 0, 0)
+	else:
+		Inventory.sort_bag(inventory)
+		req_inv_op.rpc_id(1, "sort", 0, 0)
+
+
+func inv_drop(slot: int) -> void:
+	if _is_server:
+		_server_inv_op(1, "drop", slot, 0)
+	else:
+		Inventory.drop(inventory, slot)
+		req_inv_op.rpc_id(1, "drop", slot, 0)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func req_inv_op(op: String, a: int, b: int) -> void:
+	if _is_server:
+		_server_inv_op(multiplayer.get_remote_sender_id(), op, a, b)
+
+
+func _server_inv_op(peer: int, op: String, a: int, b: int) -> void:
+	if not _joined.has(peer) or (trade != null and trade.in_trade(peer)):
+		_send_inventory(peer)
+		return
+	var inv: Dictionary = _inventories[peer]
+	match op:
+		"swap":
+			Inventory.swap(inv, a, b)
+		"sort":
+			Inventory.sort_bag(inv)
+		"drop":
+			Inventory.drop(inv, a)
+	_send_inventory(peer)
+
+
 ## Tarifi doğrudan üret (tarif kitabından hızlı üretim ve testler için)
 func request_craft(index: int) -> void:
 	if _is_server:
@@ -868,7 +953,10 @@ func _open_chest(peer: int, c: Vector2i) -> void:
 	var pearls := 2 + c.y / 45 + rng.randi_range(0, 3)
 	_give(peer, Blocks.PEARL, pearls)
 	_quest_event(peer, "chest", 0, 1)
-	var parts := ["+%d İnci" % pearls]
+	var coins := 4 + c.y / 12 + rng.randi_range(0, 8)
+	var inv: Dictionary = _inventories[peer]
+	inv["gold"] = int(inv.get("gold", 0)) + coins
+	var parts := ["+%d İnci" % pearls, "+%d Altın" % coins]
 	var roll := rng.randf()
 	var bonus := Blocks.AIR
 	var count := 0
@@ -1028,6 +1116,11 @@ func _server_catch(peer: int, id: int) -> void:
 	var first := int((_codexes[peer] as Dictionary).get(sp, 0)) == 0
 	_notify(peer, "Yakalandı: %s%s  (fileye %d/%d)" % [Species.display_name(sp),
 		"  · yeni tür!" if first else "", b.size(), World.bag_max(_inventories[peer])], "catch")
+	var rar := int(Species.get_def(sp).get("rarity", 0))
+	if rar == 5 or rar == 3:
+		_broadcast_chat("", "%s %s bir canlı yakaladı: %s!" % [_names.get(peer, "?"),
+			"MİTİK" if rar == 5 else "efsanevi", Species.display_name(sp)], 0,
+			Species.RARITY_COLORS[rar])
 
 
 ## Sunucu: tehlikeli bir canlı saldırdı (shock: yılanbalığı, bite: köpekbalığı)

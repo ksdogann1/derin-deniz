@@ -1,20 +1,25 @@
 class_name InventoryWindow
 extends PanelContainer
-## Minecraft tarzı envanter penceresi (E / C): çanta, hotbar, 3x3 üretim
-## ızgarası, sonuç yuvası, çöp ve tarif kitabı.
-## Sol tık: al / bırak / değiştir. Sağ tık: yarısını al / tek tek bırak.
-## Shift + tık: hotbar ile çanta arasında hızlı taşı, sonuçta: hepsini üret.
+## Basit envanter (E / telefonda "Envanter"). Telefona göre tasarlandı:
+##  - Çantadaki eşyaya dokun: seçili hotbar yuvasına geçer (yer değiştirir).
+##  - Hotbar'daki yuvaya dokun: o yuva seçilir.
+##  - Sağdaki tarif listesinde "Üret": malzemeler yetiyorsa tek dokunuşla üretir.
+##  - "At" modu açıkken dokunduğun yığın silinir (iki kez dokun).
 
-const SLOT := 46.0
+const SLOT := 54.0
 
 var world: Node            # World
-var single_mode := false   # dokunmatik için sağ tık yerine
-var quick_mode := false    # dokunmatik için shift yerine
+var single_mode := false   # SlotGrid uyumluluğu (eski)
+var quick_mode := false
 
 var _hover: Label
 var _levels: Label
-var _cursor: Control
-var _book_rows: Array[Dictionary] = []
+var _sel_lbl: Label
+var _drop_btn: Button
+var _drop_mode := false
+var _drop_arm := -1
+var _drop_time := 0.0
+var _rows: Array[Dictionary] = []
 var _refresh := 0.0
 
 
@@ -24,116 +29,115 @@ func _ready() -> void:
 	grow_vertical = Control.GROW_DIRECTION_BOTH
 	visible = false
 	var outer := VBoxContainer.new()
-	outer.add_theme_constant_override("separation", 8)
+	outer.add_theme_constant_override("separation", 6)
 	add_child(outer)
 
 	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 8)
 	outer.add_child(head)
-	var title := UiTheme.label("Envanter ve Üretim", 22, UiTheme.ACCENT)
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var title := UiTheme.label("Envanter", 22, UiTheme.ACCENT)
 	head.add_child(title)
 	_hover = UiTheme.label("", 15, UiTheme.GOLD)
-	_hover.custom_minimum_size = Vector2(220, 0)
-	_hover.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_hover.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_hover.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	head.add_child(_hover)
 	var close := Button.new()
-	close.text = "Kapat (E)"
+	close.text = "Kapat"
+	close.custom_minimum_size = Vector2(96, 40)
 	close.pressed.connect(close_window)
 	head.add_child(close)
-	outer.add_child(HSeparator.new())
 
 	var cols := HBoxContainer.new()
-	cols.add_theme_constant_override("separation", 22)
+	cols.add_theme_constant_override("separation", 16)
 	outer.add_child(cols)
 
-	# --- sol: çanta + hotbar
+	# --- sol: hotbar + çanta
 	var left := VBoxContainer.new()
-	left.add_theme_constant_override("separation", 6)
+	left.add_theme_constant_override("separation", 5)
 	cols.add_child(left)
-	left.add_child(UiTheme.label("Çanta", 14, UiTheme.MUTED))
-	left.add_child(_grid("inv", Inventory.HOTBAR, Inventory.SLOTS - Inventory.HOTBAR, 9))
-	left.add_child(UiTheme.label("Hotbar (1-9)", 14, UiTheme.MUTED))
-	left.add_child(_grid("inv", 0, Inventory.HOTBAR, 9))
-	_levels = UiTheme.label("", 13, UiTheme.MUTED)
-	left.add_child(_levels)
-	var modes := HBoxContainer.new()
-	modes.add_theme_constant_override("separation", 6)
-	left.add_child(modes)
-	var single := CheckButton.new()
-	single.text = "Tek tek koy"
-	single.tooltip_text = "Açıkken tıklama sağ tık gibi çalışır (telefon için)"
-	single.toggled.connect(func(on): single_mode = on)
-	modes.add_child(single)
-	var quick := CheckButton.new()
-	quick.text = "Hızlı taşı"
-	quick.tooltip_text = "Açıkken tıklama Shift+tık gibi çalışır (telefon için)"
-	quick.toggled.connect(func(on): quick_mode = on)
-	modes.add_child(quick)
+	_sel_lbl = UiTheme.label("", 14, UiTheme.MUTED)
+	left.add_child(_sel_lbl)
+	left.add_child(_grid(0, Inventory.HOTBAR))
+	left.add_child(UiTheme.label("Çanta  ·  eşyaya dokun: seçili hotbar yuvasına geçer", 13, UiTheme.MUTED))
+	left.add_child(_grid(Inventory.HOTBAR, Inventory.SLOTS - Inventory.HOTBAR))
+	var tools := HBoxContainer.new()
+	tools.add_theme_constant_override("separation", 8)
+	left.add_child(tools)
+	var sort := Button.new()
+	sort.text = "Sırala"
+	sort.custom_minimum_size = Vector2(110, 42)
+	sort.pressed.connect(func():
+		world.inv_sort()
+		world.play_ui("place"))
+	tools.add_child(sort)
+	_drop_btn = Button.new()
+	_drop_btn.text = "At: kapalı"
+	_drop_btn.toggle_mode = true
+	_drop_btn.custom_minimum_size = Vector2(130, 42)
+	_drop_btn.toggled.connect(func(on):
+		_drop_mode = on
+		_drop_arm = -1
+		_drop_btn.text = "At: AÇIK" if on else "At: kapalı")
+	tools.add_child(_drop_btn)
+	_levels = UiTheme.label("", 12, UiTheme.MUTED)
+	_levels.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_levels.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tools.add_child(_levels)
 
-	# --- orta: üretim ızgarası
-	var mid := VBoxContainer.new()
-	mid.add_theme_constant_override("separation", 6)
-	cols.add_child(mid)
-	mid.add_child(UiTheme.label("Üretim ızgarası", 14, UiTheme.MUTED))
-	var craft_row := HBoxContainer.new()
-	craft_row.add_theme_constant_override("separation", 10)
-	mid.add_child(craft_row)
-	craft_row.add_child(_grid("grid", 0, 9, 3))
-	var arrow := UiTheme.label("→", 30, UiTheme.MUTED)
-	arrow.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	craft_row.add_child(arrow)
-	var out_box := VBoxContainer.new()
-	out_box.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	craft_row.add_child(out_box)
-	out_box.add_child(_grid("out", 0, 1, 1, 56.0))
-	out_box.add_child(UiTheme.label("Sonuç", 12, UiTheme.MUTED))
-	var trash_row := HBoxContainer.new()
-	trash_row.add_theme_constant_override("separation", 8)
-	mid.add_child(trash_row)
-	trash_row.add_child(_grid("trash", 0, 1, 1))
-	var tl := UiTheme.label("Çöp: imleçteki\neşyayı siler", 12, UiTheme.MUTED)
-	trash_row.add_child(tl)
-	var help := UiTheme.label("Sol tık: al / bırak\nSağ tık: yarısı / tek tek\nShift+tık: hızlı taşı,\nsonuçta hepsini üret",
-		12, UiTheme.MUTED)
-	mid.add_child(help)
-
-	# --- sağ: tarif kitabı
+	# --- sağ: üretim listesi
 	var right := VBoxContainer.new()
-	right.add_theme_constant_override("separation", 6)
+	right.add_theme_constant_override("separation", 5)
 	cols.add_child(right)
-	right.add_child(UiTheme.label("Tarif kitabı", 14, UiTheme.MUTED))
+	right.add_child(UiTheme.label("Üretim", 15, UiTheme.MUTED))
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(330, 380)
+	scroll.custom_minimum_size = Vector2(380, 330)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	right.add_child(scroll)
 	var list := VBoxContainer.new()
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list.add_theme_constant_override("separation", 6)
+	list.add_theme_constant_override("separation", 5)
 	scroll.add_child(list)
 	for i in Blocks.RECIPES.size():
-		_book_row(list, i)
-
-	_cursor = Control.new()
-	_cursor.top_level = true
-	_cursor.z_index = 100
-	_cursor.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_cursor.draw.connect(_draw_cursor)
-	add_child(_cursor)
+		_recipe_row(list, i)
 
 
-func _grid(kind: String, start: int, count: int, cols: int, slot := SLOT) -> SlotGrid:
+func _grid(start: int, count: int) -> SlotGrid:
 	var g := SlotGrid.new()
 	g.world = world
 	g.window = self
-	g.kind = kind
+	g.kind = "inv"
 	g.start = start
 	g.count = count
-	g.cols = cols
-	g.slot = slot
+	g.cols = 9
+	g.slot = SLOT
+	g.on_click = _on_slot
 	return g
 
 
-func _book_row(list: VBoxContainer, i: int) -> void:
+func _on_slot(idx: int, _button: int) -> void:
+	if _drop_mode:
+		var s = world.inventory.slots[idx]
+		if s == null:
+			return
+		if _drop_arm == idx and _drop_time > 0.0:
+			world.inv_drop(idx)
+			world.play_ui("break")
+			_drop_arm = -1
+			set_hover("")
+		else:
+			_drop_arm = idx
+			_drop_time = 2.0
+			set_hover("Silmek için tekrar dokun: %s" % Blocks.item_name(int(s[0])))
+		return
+	if idx < Inventory.HOTBAR:
+		world.selected_slot = idx
+		world.play_ui("place")
+	else:
+		world.inv_swap(idx, world.selected_slot)
+		world.play_ui("pickup")
+
+
+func _recipe_row(list: VBoxContainer, i: int) -> void:
 	var r: Dictionary = Blocks.RECIPES[i]
 	var row := PanelContainer.new()
 	row.add_theme_stylebox_override("panel", UiTheme.box(Color(0.02, 0.06, 0.11, 0.7), Color(1, 1, 1, 0.06), 6, 1, 6))
@@ -141,71 +145,55 @@ func _book_row(list: VBoxContainer, i: int) -> void:
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 8)
 	row.add_child(h)
-	var pat := Control.new()
-	pat.custom_minimum_size = Vector2(3 * 15, 3 * 15)
-	pat.draw.connect(func(): _draw_pattern(pat, r))
-	h.add_child(pat)
+	var icon := TextureRect.new()
+	icon.texture = TileAtlas.icon(r["out"])
+	icon.custom_minimum_size = Vector2(36, 36)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	h.add_child(icon)
 	var v := VBoxContainer.new()
 	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	v.add_theme_constant_override("separation", 0)
 	h.add_child(v)
-	var name := UiTheme.label("%s ×%d" % [Blocks.item_name(r["out"]), r["count"]], 14)
+	var name := UiTheme.label("%s ×%d" % [Blocks.item_name(r["out"]), r["count"]], 15)
 	v.add_child(name)
+	var need := RichTextLabel.new()
+	need.bbcode_enabled = true
+	need.fit_content = true
+	need.scroll_active = false
+	need.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	need.add_theme_font_size_override("normal_font_size", 12)
+	need.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(need)
 	if Blocks.RECIPE_HINTS.has(r["out"]):
-		var hint := UiTheme.label(Blocks.RECIPE_HINTS[r["out"]], 10, UiTheme.MUTED)
+		var hint := UiTheme.label(Blocks.RECIPE_HINTS[r["out"]], 11, UiTheme.MUTED)
 		hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		v.add_child(hint)
 	var b := Button.new()
-	b.text = "Diz"
-	b.tooltip_text = "Malzemeleri ızgaraya diz"
-	b.custom_minimum_size = Vector2(56, 0)
+	b.text = "Üret"
+	b.custom_minimum_size = Vector2(76, 42)
 	b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	b.pressed.connect(func():
-		world.inv_autofill(i)
-		play_click("grid"))
+		world.request_craft(i)
+		world.play_ui("craft"))
 	h.add_child(b)
-	_book_rows.append({"button": b, "name": name, "recipe": r, "index": i})
-
-
-func _draw_pattern(c: Control, r: Dictionary) -> void:
-	var pat: Array = r["pattern"]
-	for y in 3:
-		for x in 3:
-			var rect := Rect2(x * 15, y * 15, 14, 14)
-			c.draw_rect(rect, Color(0, 0, 0, 0.35))
-			if y < pat.size() and x < (pat[y] as String).length():
-				var ch := (pat[y] as String).substr(x, 1)
-				if ch != ".":
-					c.draw_texture_rect(TileAtlas.icon(Blocks.KEY[ch]), rect.grow(-1), false)
-
-
-func _draw_cursor() -> void:
-	var inv: Dictionary = world.inventory
-	if inv.is_empty() or inv.cursor == null:
-		return
-	var p := _cursor.get_global_mouse_position()
-	var id := int(inv.cursor[0])
-	var n := int(inv.cursor[1])
-	var r := Rect2(p - Vector2(16, 16), Vector2(32, 32))
-	_cursor.draw_texture_rect(TileAtlas.icon(id), r, false, Species.tint(id) if Species.is_species(id) else Color.WHITE)
-	if n > 1:
-		var font := ThemeDB.fallback_font
-		_cursor.draw_string_outline(font, r.end - Vector2(30, 0), str(n), HORIZONTAL_ALIGNMENT_RIGHT, 30, 13, 4,
-			Color(0, 0, 0, 0.85))
-		_cursor.draw_string(font, r.end - Vector2(30, 0), str(n), HORIZONTAL_ALIGNMENT_RIGHT, 30, 13, Color.WHITE)
+	_rows.append({"button": b, "name": name, "need": need, "recipe": r, "index": i})
 
 
 func set_hover(text: String) -> void:
 	_hover.text = text
 
 
-func play_click(kind: String) -> void:
-	world.play_ui("craft" if kind == "out" else "place")
+func play_click(_kind: String) -> void:
+	world.play_ui("place")
 
 
 func open_window() -> void:
 	visible = true
-	_refresh_book()
+	_drop_btn.button_pressed = false
+	_refresh_rows()
 
 
 func close_window() -> void:
@@ -224,23 +212,34 @@ func toggle() -> void:
 func _process(delta: float) -> void:
 	if not visible:
 		return
-	_cursor.queue_redraw()
+	_drop_time = maxf(0.0, _drop_time - delta)
 	_refresh -= delta
 	if _refresh <= 0.0:
 		_refresh = 0.25
-		_refresh_book()
+		_refresh_rows()
 
 
-func _refresh_book() -> void:
+func _refresh_rows() -> void:
 	var inv: Dictionary = world.inventory
 	if inv.is_empty():
 		return
-	for row in _book_rows:
-		(row.button as Button).disabled = not Inventory.can_fill(inv, row.index)
+	var sel_id := Inventory.slot_id(inv, world.selected_slot)
+	_sel_lbl.text = "Hotbar  ·  seçili yuva %d: %s" % [world.selected_slot + 1,
+		Blocks.item_name(sel_id) if sel_id != 0 else "boş"]
+	for row in _rows:
 		var r: Dictionary = row.recipe
+		var parts: PackedStringArray = []
+		var need := Blocks.recipe_inputs(r)
+		for id in need:
+			var have := Inventory.count(inv, int(id))
+			var col := "#7ee2a8" if have >= int(need[id]) else "#ff8a7a"
+			parts.append("[color=%s]%d %s[/color] [color=#8aa4b8](%d)[/color]" % [col, int(need[id]),
+				Blocks.item_name(int(id)), have])
+		(row.need as RichTextLabel).text = "  ".join(parts)
+		(row.button as Button).disabled = not Inventory.can_craft(inv, row.index)
 		if Blocks.UPGRADE_MAX.has(r["out"]):
-			(row.name as Label).text = "%s (Sv %d/%d)" % [Blocks.item_name(r["out"]),
+			(row.name as Label).text = "%s  (Sv %d/%d)" % [Blocks.item_name(r["out"]),
 				Inventory.level(inv, r["out"]), int(Blocks.UPGRADE_MAX[r["out"]])]
-	_levels.text = "Ekipman:  Tüp %d/3 · Palet %d/2 · Fener %d/2 · Fileye %d/2" % [
+	_levels.text = "Tüp %d/3 · Palet %d/2 · Fener %d/2 · Fileye %d/2" % [
 		Inventory.level(inv, Blocks.TANK_UPGRADE), Inventory.level(inv, Blocks.FINS),
 		Inventory.level(inv, Blocks.HELMET), Inventory.level(inv, Blocks.BIG_BAG)]

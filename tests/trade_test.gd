@@ -128,6 +128,10 @@ func _run_a(tr: Trade) -> void:
 	await _wait(0.8)
 	check("elde olandan fazlası eklenmedi", _offered_total(tr.state.mine) <= before_mine)
 	my_n = _offered_total(tr.state.mine)
+	var gold0 := int(world.inventory.get("gold", 0))
+	tr.offer_gold(10)
+	ok = await _until(func(): return int(tr.state.get("my_gold", 0)) == 10)
+	check("altın teklife kondu", ok)
 	ok = await _until(func(): return (tr.state.get("theirs", []) as Array).size() > 0)
 	check("karşı teklif göründü", ok)
 	tr.set_ready(true)
@@ -146,6 +150,7 @@ func _run_a(tr: Trade) -> void:
 	ok = await _until(func(): return _count(their_id) == before_theirs + 2)
 	check("karşı eşyalar envantere geldi (+2)", ok)
 	check("verdiğim yığın envanterden düştü", _count(my_id) == before_mine - my_n)
+	check("verdiğim 10 altın düştü", int(world.inventory.get("gold", 0)) == gold0 - 10)
 
 
 func _run_b(tr: Trade) -> void:
@@ -163,6 +168,7 @@ func _run_b(tr: Trade) -> void:
 		return
 	var their_id := int(tr.state.theirs[0][0])
 	var their_n := int(tr.state.theirs[0][1])
+	var gold0 := int(world.inventory.get("gold", 0))
 	# A'nın teklifinden farklı bir eşya bul (en az 2 adet)
 	var slot := -1
 	for i in Inventory.SLOTS:
@@ -190,6 +196,7 @@ func _run_b(tr: Trade) -> void:
 	ok = await _until(func(): return _count(their_id) == before_theirs + their_n)
 	check("gelen yığın envantere girdi", ok)
 	check("verdiğim 2 eşya düştü", _count(my_id) == before_mine - 2)
+	check("karşı tarafın 10 altını geldi", int(world.inventory.get("gold", 0)) == gold0 + 10)
 
 
 func _offered_total(list: Array) -> int:

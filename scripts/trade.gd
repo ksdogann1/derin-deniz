@@ -48,6 +48,10 @@ func offer_slot(slot: int, amount: int) -> void:
 	_call("_s_offer", [slot, amount])
 
 
+func offer_gold(amount: int) -> void:
+	_call("_s_gold", [amount])
+
+
 func remove_offer(index: int) -> void:
 	_call("_s_remove", [index])
 
@@ -85,6 +89,12 @@ func _rpc_answer(args: Array) -> void:
 func _rpc_offer(args: Array) -> void:
 	if multiplayer.is_server() and args.size() == 2:
 		_s_offer(multiplayer.get_remote_sender_id(), int(args[0]), int(args[1]))
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_gold(args: Array) -> void:
+	if multiplayer.is_server() and args.size() == 1:
+		_s_gold(multiplayer.get_remote_sender_id(), int(args[0]))
 
 
 @rpc("any_peer", "call_remote", "reliable")
@@ -174,7 +184,8 @@ func _s_answer(peer: int, from_peer: int, accept: bool) -> void:
 		return
 	var id := _next
 	_next += 1
-	_trades[id] = {"a": from_peer, "b": peer, "offer": {"a": [], "b": []}, "ok": {"a": false, "b": false}}
+	_trades[id] = {"a": from_peer, "b": peer, "offer": {"a": [], "b": []}, "ok": {"a": false, "b": false},
+		"gold": {"a": 0, "b": 0}}
 	_of[from_peer] = id
 	_of[peer] = id
 	_broadcast(id)
@@ -216,6 +227,15 @@ func _s_offer(peer: int, slot: int, amount: int) -> void:
 			world._notify(peer, "Teklife en fazla %d yığın konabilir." % MAX_OFFER, "warn")
 			return
 		list.append([id, n])
+	_changed(_of[peer])
+
+
+func _s_gold(peer: int, amount: int) -> void:
+	if not _of.has(peer):
+		return
+	var t: Dictionary = _trades[_of[peer]]
+	var have := int((world._inventories[peer] as Dictionary).get("gold", 0))
+	t.gold[_side(t, peer)] = clampi(amount, 0, have)
 	_changed(_of[peer])
 
 
@@ -292,6 +312,15 @@ func _finish(id: int) -> void:
 		if not Inventory.take(inv_b, int(e[0]), int(e[1])):
 			ok = false
 			why = "%s teklif ettiği eşyaya artık sahip değil." % world._names[b]
+	# altın
+	var ga := int(t.gold.a)
+	var gb := int(t.gold.b)
+	if ok and (int(inv_a.get("gold", 0)) < ga or int(inv_b.get("gold", 0)) < gb):
+		ok = false
+		why = "teklif edilen altın artık yok."
+	if ok:
+		inv_a["gold"] = int(inv_a.get("gold", 0)) - ga + gb
+		inv_b["gold"] = int(inv_b.get("gold", 0)) - gb + ga
 	# sonra karşı tarafın teklifini ekle; sığmazsa iptal
 	if ok:
 		for e in t.offer.b:
@@ -327,7 +356,8 @@ func _broadcast(id: int) -> void:
 		var other := int(t[other_side])
 		_to(me, "c_state", [{"id": id, "other": other, "other_name": world._names.get(other, "?"),
 			"mine": (t.offer[side] as Array).duplicate(true), "theirs": (t.offer[other_side] as Array).duplicate(true),
-			"my_ok": t.ok[side], "their_ok": t.ok[other_side]}])
+			"my_ok": t.ok[side], "their_ok": t.ok[other_side],
+			"my_gold": int(t.gold[side]), "their_gold": int(t.gold[other_side])}])
 
 
 func in_trade(peer: int) -> bool:

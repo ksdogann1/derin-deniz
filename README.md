@@ -61,10 +61,12 @@ Google Play'e çıkarken yeni ve gizli bir anahtar oluştur.
 | Tuş | İş |
 |---|---|
 | W A S D / ok tuşları / Boşluk | Yüz |
+| Fare tekerleği / + - / iki parmak | Yakınlaştır (Shift + tekerlek: hotbar) |
+| B (teknenin yanında) | Tekne: depo, satış, geliştirme, pazar |
 | Sol tık (basılı tut) | Bloğu kır |
 | Sol tık (canlının üstünde) | Ağ ile yakala |
 | Sağ tık | Seçili bloğu koy |
-| 1–9 / fare tekerleği / hotbar'a tıkla | Hotbar yuvası seç |
+| 1–9 / hotbar'a tıkla | Hotbar yuvası seç |
 | Sağ tık (akvaryumun üstünde) | Akvaryuma canlı koy |
 | E (ya da C, I, Tab) | Envanter ve üretim |
 | K | Deniz Ansiklopedisi |
@@ -81,18 +83,24 @@ yosun, tahta, ağ, ilk yakalama, hazine, istasyon, katmanlar, ansiklopedi, akvar
 Fener Balığı, Uçurum, Altın Fener Balığı). Bitince sürekli yeni rastgele görevler gelir.
 Her görev inci kazandırır.
 
-### Envanter ve üretim (Minecraft tarzı, E)
-- 36 yuvalı envanter: altta 9'luk hotbar (1-9 ile seçilir), üstte 27 yuvalı çanta. Eşyalar 99'a
-  kadar yığılır (Ağ yığılmaz).
-- **Sol tık:** yığını al / bırak / değiştir. **Sağ tık:** yarısını al / tek tek bırak.
-  **Shift + tık:** hotbar ile çanta arasında hızlı taşı; sonuç yuvasında: yapabildiğin kadar üret.
-- **3x3 üretim ızgarası:** malzemeleri desene göre diz, sağdaki sonuç yuvasından al. Desen
-  ızgaranın herhangi bir yerinde olabilir, yatay aynası da olur. Pencereyi kapatınca ızgarada
-  kalanlar envantere döner.
-- **Tarif kitabı:** sağdaki listede her tarifin deseni görünür. "Diz" düğmesi malzemeleri
-  envanterden alıp ızgaraya kendisi dizer.
-- **Çöp yuvası:** imleçteki yığını siler.
-- Telefonda sağ tık ve Shift yok: pencerede "Tek tek koy" ve "Hızlı taşı" anahtarlarını kullan.
+### Envanter ve üretim (E)
+- 36 yuva: üstte 9'luk hotbar (1-9 ile seçilir), altta 27 yuvalı çanta. Eşyalar 99'a kadar yığılır.
+- **Çantadaki eşyaya dokun / tıkla:** seçili hotbar yuvasına geçer (yer değiştirir).
+  **Hotbar'daki yuvaya dokun:** o yuva seçilir.
+- **Üretim:** sağdaki listede her tarifin malzemeleri sayılarıyla görünür (yeşil: yeterli,
+  kırmızı: eksik). "Üret"e bas, bitti.
+- **Sırala:** çantayı birleştirip düzenler. **At:** açıkken dokunduğun yığın silinir (iki kez dokun).
+
+### Tekne ve Altın (B)
+- Her oyuncunun yüzeyde kendi teknesi var; oyuna teknenin yanında başlarsın.
+- **Altın** kazanmak için: yakaladığın canlıları ve inciyi teknede sat, sandıkları aç
+  (sandıklardan da altın çıkar). Yeni oyuncu 25 Altınla başlar.
+- **Depo:** canlıları teknede sakla, envanterin dolmasın.
+- **Geliştir:** Gövde (Sandal → Balıkçı Teknesi → Yat → Araştırma Gemisi, daha çok yer ve
+  daha gösterişli tekne), Depo, Sonar (çok nadir, efsanevi ve mitik canlıları mini haritada
+  gösterir), Boya.
+- **Pazar:** eşyanı fiyatıyla listele; biri satın alınca altın sana gelir (oyunda olmasan bile).
+  Başkalarının ilanlarını satın al. Takasta da altın verebilirsin.
 
 Tarifler (S kum, R kaya, C mercan, K yosun, G cam, P inci, A uçurum taşı, T tahta, L fener, . boş):
 
@@ -141,8 +149,8 @@ Gezdiğin yerler haritada açılır (keşif sisi). Katman sınırları ve oyuncu
 - Yakaladıkların **fileyende** durur (en fazla 5). Yüzeye ya da bir **oksijen istasyonunun**
   yanına dönünce koleksiyonuna geçer. **Oksijenin biterse fileyendekiler kaçar.**
   Her dalış bir karar: biraz daha derine mi, geri mi?
-- **Deniz Ansiklopedisi (K):** 24 tür, her biri kendi derinliğinde ve nadirliğinde
-  (Yaygın, Nadir, Çok Nadir, Efsanevi). Bir türü ilk kez koleksiyonuna kattığında inci ödülü
+- **Deniz Ansiklopedisi (K):** 45 tür, her biri kendi derinliğinde ve nadirliğinde
+  (Yaygın, Nadir, Çok Nadir, Efsanevi, Mitik). Bir türü ilk kez koleksiyonuna kattığında inci ödülü
   alırsın; nadir türler çok daha fazla verir.
 - **Akvaryum:** Üssüne akvaryum koy, sağ tıklayıp koleksiyonundan bir canlı yerleştir,
   içinde yüzsün. Akvaryumu kırarsan canlı koleksiyonuna geri döner.
@@ -164,7 +172,12 @@ koyu / karın açık gölgelendirme, pul dokusu, yan çizgi, türüne göre kuyr
 | Ahtapot, Işıklı Denizanası, Orfoz, Kılıç Balığı | orta-derin | Nadir / Çok Nadir |
 | Fener Balığı, Hayalet Kalamar, Ay Balığı | derin | Çok Nadir |
 | Altın Fener Balığı, Dev Kalamar | uçurum | Efsanevi |
-| Elektrikli Yılanbalığı, Mavi Köpekbalığı | orta-derin | Tehlikeli |
+| Elektrikli Yılanbalığı, Mavi Köpekbalığı, Çekiç Başlı Köpekbalığı | orta-derin | Tehlikeli |
+| Levrek, Uskumru, Kırlangıç, Deniz Yıldızı | sığ-orta | Yaygın |
+| Papağan Balığı, Melek Balığı, Istakoz | sığ-orta | Nadir |
+| Aslan Balığı, Lambuka, Ton, Manta Vatoz, Engerek Balığı | orta-derin | Çok Nadir |
+| Kürek Balığı | derin | Efsanevi |
+| Kristal Denizanası, Gökkuşağı Balığı, Hayalet Köpekbalığı, Kraken Yavrusu, Altın Deniz Ejderi, Altın Kaplumbağa, Abis Yılanı | her yerde, binde bir | **Mitik** (mor parıltı; yakalayınca herkese duyurulur) |
 
 ### Dünya
 
@@ -255,6 +268,11 @@ Görseller `tools/generate_assets.py` ile üretildi (Python + Pillow). Bu betiğ
     scripts/touch_controls.gd  telefon kontrolleri
     scripts/trade.gd           takas (sunucu yetkili)
     scripts/trade_window.gd    takas penceresi
+    scripts/economy.gd         altın, tekneler, satış, pazar (sunucu yetkili)
+    scripts/boats.gd           yüzeydeki teknelerin çizimi
+    scripts/boat_window.gd     tekne penceresi (Depo, Sat, Geliştir, Pazar)
+    scripts/web_host.gd        kurucunun tarayıcı sürümünü aynı ağa sunması
+    tools/art_boats.py         tekne ve altın görselleri
     scripts/world_map.gd       harita resmi ve keşif sisi
     scripts/map_view.gd        tam harita ve mini harita çizimi
     tools/art_creatures.py     gerçekçi canlı çizim motoru

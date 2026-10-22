@@ -20,6 +20,12 @@ var _world_pos := Vector2.ZERO
 var _world_pressed := false
 var _buttons: Array[Dictionary] = []     # {rect, label, action}
 var _pressed_btn := -1
+# iki parmakla yakınlaştırma (Growtopia gibi)
+var _extra_idx := -1                     # dünyaya dokunan ikinci parmak
+var _extra_pos := Vector2.ZERO
+var _pinch := false
+var _pinch_d0 := 1.0
+var _pinch_z0 := 1.0
 
 
 func _ready() -> void:
@@ -81,7 +87,7 @@ func world_point() -> Vector2:
 func _blocked_by_ui(pos: Vector2) -> bool:
 	if hud.any_panel_open() or hud.typing():
 		return true
-	return hud._hotbar.get_global_rect().has_point(pos)
+	return hud._hotbar.get_global_rect().has_point(pos) or hud.ui_button_at(pos)
 
 
 func _input(event: InputEvent) -> void:
@@ -90,8 +96,11 @@ func _input(event: InputEvent) -> void:
 		var t := event as InputEventScreenTouch
 		var up := t.position / Settings.ui_scale      # arayüz koordinatı (ölçekli katman)
 		if t.pressed:
-			# yan düğmeler
+			# yan düğmeler (bir pencere açıkken gizli ve dokunulmaz: pencereyle çakışmasın)
+			var panel_open: bool = hud.any_panel_open()
 			for i in _buttons.size():
+				if panel_open:
+					break
 				if (_buttons[i].rect as Rect2).has_point(up):
 					_pressed_btn = i
 					(_buttons[i].action as Callable).call()
@@ -110,20 +119,42 @@ func _input(event: InputEvent) -> void:
 				_world_idx = t.index
 				_world_pos = t.position
 				_world_pressed = true
+			elif _world_idx != -1 and _extra_idx == -1 and not _blocked_by_ui(up):
+				# ikinci parmak: kırma/koyma iptal, yakınlaştırma başlar
+				_extra_idx = t.index
+				_extra_pos = t.position
+				_pinch = true
+				_world_pressed = false
+				_pinch_d0 = maxf(20.0, _world_pos.distance_to(_extra_pos))
+				_pinch_z0 = Settings.zoom
 		else:
 			if t.index == _joy_idx:
 				_joy_idx = -1
 				_joy_vec = Vector2.ZERO
-			if t.index == _world_idx:
-				_world_idx = -1
-				_world_pressed = false
+			if t.index == _world_idx or t.index == _extra_idx:
+				if _pinch:
+					# yakınlaştırma bitti; iki parmak da kalkana dek kırma başlamasın
+					if t.index == _world_idx:
+						_world_idx = _extra_idx
+						_world_pos = _extra_pos
+					_extra_idx = -1
+					_pinch = false
+					_world_pressed = false
+				else:
+					_world_idx = -1
+					_world_pressed = false
 			_pressed_btn = -1
 	elif event is InputEventScreenDrag:
 		var d := event as InputEventScreenDrag
 		if d.index == _joy_idx:
 			_update_joy(d.position / Settings.ui_scale)
-		elif d.index == _world_idx:
-			_world_pos = d.position
+		elif d.index == _world_idx or d.index == _extra_idx:
+			if d.index == _world_idx:
+				_world_pos = d.position
+			else:
+				_extra_pos = d.position
+			if _pinch:
+				Settings.set_zoom(_pinch_z0 * _world_pos.distance_to(_extra_pos) / _pinch_d0)
 
 
 func _update_joy(pos: Vector2) -> void:
@@ -148,6 +179,8 @@ func _process(_delta: float) -> void:
 
 func _draw() -> void:
 	_layout()
+	if hud.any_panel_open():
+		return
 	var c := joy_center()
 	_canvas.draw_circle(c, JOY_R + 6, Color(0.02, 0.06, 0.12, 0.35))
 	_canvas.draw_arc(c, JOY_R, 0, TAU, 48, Color(0.6, 0.9, 1.0, 0.45), 2.0)

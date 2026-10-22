@@ -181,6 +181,11 @@ func _step(c: Dictionary, delta: float, players: Array) -> void:
 				var dir6 := signf(vel.x) if absf(vel.x) > 0.1 else 1.0
 				vel.x = lerpf(vel.x, dir6 * speed * 0.6, delta)
 				vel.y = sin(c.t * 0.4) * speed * 0.15
+		"ribbon":
+			# uzun gövdeli, saldırmayan dalgalı yüzüş
+			var dir7 := signf(vel.x) if absf(vel.x) > 0.1 else 1.0
+			vel.x = lerpf(vel.x, dir7 * speed, delta * 1.5)
+			vel.y = sin(c.t * 0.6) * speed * 0.35
 		"eel":
 			var np2 := _nearest_player(c.pos, players)
 			if np2 != Vector2.INF and np2.distance_to(c.pos) < AGGRO_RANGE:
@@ -312,6 +317,9 @@ func _make_view(sp: int, pos: Vector2) -> Dictionary:
 		var hostile: bool = d.get("hostile", false)
 		var g := Gradient.new()
 		var col := Color(1.0, 0.95, 0.45) if not hostile else Color(1.0, 0.95, 0.2)
+		if int(d.get("rarity", 0)) == 5:
+			col = Color(0.95, 0.55, 1.0)       # mitik: mor parıltı
+			sparkle.amount = 10
 		g.colors = PackedColorArray([Color(col, 0.0), Color(col, 0.9), Color(col, 0.0)])
 		g.offsets = PackedFloat32Array([0.0, 0.3, 1.0])
 		sparkle.color_ramp = g
@@ -344,7 +352,10 @@ func _view_tick(delta: float) -> void:
 					near = true
 			f = (2 if near else 0) + int(v.t * 3.0) % 2
 		s.frame = int(d["row"]) * frames + f
-		if d.get("attack", "") == "shock":
+		if int(d.get("rarity", 0)) == 5:
+			# mitik: renkten renge geçen parıltı
+			s.modulate = Color.from_hsv(fmod(v.t * 0.15, 1.0), 0.12, 1.2)
+		elif d.get("attack", "") == "shock":
 			# elektrik titremesi
 			s.modulate = Color(1, 1, 1) if int(v.t * 10.0) % 7 != 0 else Color(1.8, 1.8, 0.6)
 

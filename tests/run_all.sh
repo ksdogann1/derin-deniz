@@ -19,6 +19,10 @@ echo "== Yerel oynanış testi"
 echo "== Özellik testi (görevler, ekipman, ayarlar, dokunmatik)"
 "$GODOT" --headless --path . --script res://tests/feature_test.gd || fail=1
 
+echo "== Ekonomi testi (altın, tekne, pazar, envanter, yakınlaştırma, sandık hatası)"
+"$GODOT" --headless --path . --script res://tests/economy_test.gd | grep -E "FAIL|kontrol geçti" || fail=1
+"$GODOT" --headless --path . --script res://tests/economy_test.gd > /dev/null 2>&1 || fail=1
+
 echo "== Ağ testi (sunucu + observer + actor + latejoin)"
 "$GODOT" --headless --path . -- --server --port $PORT --world $WORLD > "$LOGDIR/server.log" 2>&1 &
 SERVER=$!

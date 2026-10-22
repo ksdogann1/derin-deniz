@@ -573,7 +573,7 @@ func _process(delta: float) -> void:
 			_world.hud.toggle_craft()
 			_world.hud._inv.set_hover("Ağ")
 		elif _shot_ui == "codex":
-			_world.codex = {200: 7, 201: 4, 202: 3, 204: 2, 205: 1, 206: 5, 209: 1, 212: 1}
+			_world.codex = {200: 7, 201: 4, 202: 3, 204: 2, 205: 1, 206: 5, 209: 1, 212: 1, 224: 3, 229: 1, 239: 1, 242: 1}
 			_world.inventory = Inventory.create({204: 1, 206: 2, 209: 1})
 			_world.hud._codex.visible = true
 			_world.hud._refresh_codex()
@@ -609,6 +609,22 @@ func _process(delta: float) -> void:
 				[204, Vector2(70, 40)], [205, Vector2(-120, 90)], [200, Vector2(140, 90)]]
 			for z in zoo:
 				_world.wildlife.spawn(z[0], p.position + z[1])
+		elif _shot_ui == "zoo2":
+			var pc3 := _world.cell_at(p.position)
+			for dx in range(-26, 27):
+				for dy in range(-10, 10):
+					_world._server_set_cell(pc3 + Vector2i(dx, dy), Blocks.AIR)
+			for dx in range(-26, 27):
+				_world._server_set_cell(pc3 + Vector2i(dx, 10), Blocks.SAND)
+			var zoo2 := [[224, Vector2(-330, -120)], [225, Vector2(-200, -125)], [226, Vector2(-90, -120)],
+				[227, Vector2(40, -125)], [228, Vector2(160, -110)], [229, Vector2(300, -110)],
+				[230, Vector2(-310, -40)], [231, Vector2(-160, -45)], [234, Vector2(-30, -50)],
+				[235, Vector2(150, -40)], [236, Vector2(310, -45)], [237, Vector2(-250, 40)],
+				[238, Vector2(-70, 35)], [239, Vector2(50, 40)], [240, Vector2(210, 40)],
+				[241, Vector2(340, 40)], [242, Vector2(-330, 100)], [243, Vector2(-180, 100)],
+				[244, Vector2(10, 100)], [232, Vector2(160, 150)], [233, Vector2(280, 150)]]
+			for z in zoo2:
+				_world.wildlife.spawn(z[0], p.position + z[1])
 		elif _shot_ui == "deep":
 			var pc2 := _world.cell_at(p.position)
 			for dx in range(-22, 23):
@@ -626,6 +642,26 @@ func _process(delta: float) -> void:
 			_world.hud._pause.visible = true
 		elif _shot_ui == "settings":
 			_world.hud._settings.visible = true
+		elif _shot_ui == "boat" or _shot_ui == "boatview" or _shot_ui == "market":
+			var inv: Dictionary = _world._inventories[1]
+			inv["gold"] = 1240
+			inv.boat.hull = 2 if _shot_ui == "boatview" else 1
+			inv.boat.paint = 4
+			inv.boat.store = {201: 3, 213: 5, 221: 1}
+			Inventory.give(inv, 204, 2)
+			Inventory.give(inv, 209, 1)
+			Inventory.give(inv, 214, 4)
+			_world.economy.listings = [
+				{"id": 1, "seller": "Ali", "item": 223, "n": 1, "price": 900},
+				{"id": 2, "seller": "Zeynep", "item": Blocks.LAMP, "n": 5, "price": 12},
+				{"id": 3, "seller": p.display_name, "item": Blocks.PEARL, "n": 20, "price": 4}]
+			_world.economy._broadcast_market()
+			_world._send_inventory(1)
+			_world.economy.broadcast_boats()
+			if _shot_ui != "boatview":
+				_world.hud.toggle_boat()
+				if _shot_ui == "market":
+					_world.hud._boat_win._tabs.current_tab = 3
 		elif _shot_ui == "map":
 			# örnek keşif: yüzey boyunca ve aşağı inen bir dalış yolu
 			for x in range(40, WorldGen.W - 40, 6):

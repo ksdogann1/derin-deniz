@@ -405,3 +405,62 @@ static func can_fill(st: Dictionary, ri: int) -> bool:
 		if have < int(need[id]):
 			return false
 	return true
+
+
+# --------------------------------------------------------------------------
+# Basit envanter (v0.8): dokunarak taşı, sırala, at
+# --------------------------------------------------------------------------
+
+## İki yuvanın yerini değiştir; aynı eşyaysa birleştir.
+static func swap(st: Dictionary, a: int, b: int) -> void:
+	if a == b or a < 0 or b < 0 or a >= SLOTS or b >= SLOTS:
+		return
+	var sa = st.slots[a]
+	var sb = st.slots[b]
+	if sa != null and sb != null and int(sa[0]) == int(sb[0]):
+		var id := int(sa[0])
+		var mx := max_stack(id)
+		var put := mini(mx - int(sb[1]), int(sa[1]))
+		st.slots[b] = [id, int(sb[1]) + put]
+		st.slots[a] = null if int(sa[1]) - put <= 0 else [id, int(sa[1]) - put]
+		return
+	st.slots[a] = sb
+	st.slots[b] = sa
+
+
+## Çantayı (hotbar hariç) birleştirip türe göre sırala.
+static func sort_bag(st: Dictionary) -> void:
+	var totals := {}
+	var order: Array = []
+	for i in range(HOTBAR, SLOTS):
+		var s = st.slots[i]
+		if s != null:
+			var id := int(s[0])
+			if not totals.has(id):
+				order.append(id)
+			totals[id] = int(totals.get(id, 0)) + int(s[1])
+			st.slots[i] = null
+	order.sort_custom(func(x, y): return _sort_key(x) < _sort_key(y))
+	for id in order:
+		_add_to(st.slots, id, int(totals[id]), range(HOTBAR, SLOTS))
+
+
+static func _sort_key(id: int) -> int:
+	# bloklar, sonra eşyalar, en sonda canlılar
+	if Species.is_species(id):
+		return 2000 + id
+	return id
+
+
+## Bir yuvadaki yığını at (sil).
+static func drop(st: Dictionary, slot: int) -> void:
+	if slot >= 0 and slot < SLOTS:
+		st.slots[slot] = null
+
+
+## Tarifin malzemeleri envanterde var mı?
+static func can_craft(st: Dictionary, ri: int) -> bool:
+	var out := int(Blocks.RECIPES[ri]["out"])
+	if Blocks.UPGRADE_MAX.has(out):
+		return can_fill(st, ri)
+	return can_fill(st, ri) and free_space(st, out) >= int(Blocks.RECIPES[ri]["count"])

@@ -1,10 +1,10 @@
-DERİN DENİZ  (deneme sürümü 0.7)
+DERİN DENİZ  (deneme sürümü 0.8)
 
 Çalıştırmak: DerinDeniz.exe dosyasına çift tıkla. Kurulum gerekmez.
 Windows "Bilgisayarınız korundu" derse: "Ek bilgi" > "Yine de çalıştır".
 
 ARKADAŞINLA OYNAMAK
-Önemli: İkiniz de AYNI SÜRÜMÜ (0.7) kullanın.
+Önemli: Herkes AYNI SÜRÜMÜ (0.8) kullanmalı.
 
 Aynı evde / aynı Wi-Fi'de:
   1. Biri "Dünya Kur ve Oyna" der. Windows Güvenlik Duvarı sorarsa "İzin ver"
@@ -17,22 +17,27 @@ Farklı evlerde (en kolay yol):
   2. Biriniz "Ağ" > "Yeni ağ oluştur" (ad + şifre), diğeri "Mevcut ağa katıl".
   3. Kurucu "Dünya Kur ve Oyna" der. Diğerinin listesinde dünya görünür.
      Görünmezse kurucunun Radmin'de yazan 26.x.x.x adresini elle yazın.
-  Oyun ayrıca modemde portu otomatik açmayı dener (UPnP); sonucu ve internet adresini
-  kurucunun Esc menüsünde yazar. Ama birçok internet sağlayıcısında bu yetmez,
-  Radmin VPN her zaman çalışır.
+
+IPHONE İLE OYNAMAK
+  - Tek başına: Safari'de ksdogann1.github.io/derin-deniz aç, Paylaş > Ana Ekrana Ekle.
+    Bir kere açtıktan sonra internetsiz de oynanır.
+  - Arkadaşınla (aynı Wi-Fi): sen "Dünya Kur ve Oyna" de, Esc menüsünde yazan
+    http://192.168.x.x:8080 adresini iPhone'daki arkadaşın Safari'ye yazsın,
+    "Kurucunun dünyasına katıl"a bassın.
+
+YENİ (0.8)
+  Tekne: her oyuncunun yüzeyde kendi teknesi var. Yanındayken B (telefonda "Teknem").
+  Altın: canlıları ve inciyi teknede sat, tekneni geliştir (Sandal > Balıkçı Teknesi >
+  Yat > Araştırma Gemisi), Pazar'da oyunculara eşya sat. Takasta altın da verilebilir.
+  Envanter: dokun-taşı basit envanter, "Üret" tek dokunuş. Telefonda karışmıyor.
+  Yakınlaştırma: fare tekerleği, + / -, telefonda iki parmak.
+  21 yeni tür; 7 tanesi MİTİK (binde bir çıkar, mor parlar, yakalayınca herkese duyurulur).
+  Telefonda sandık kırılmama hatası düzeltildi.
 
 KONTROLLER
-  WASD yüz · sol tık kır / yakala · sağ tık koy · 1-9 hotbar
-  E envanter ve üretim (Minecraft gibi 3x3 ızgara + tarif kitabı)
-  K ansiklopedi · M harita · T oyuncular ve takas
+  WASD yüz · sol tık kır / yakala · sağ tık koy · 1-9 hotbar · tekerlek yakınlaştır
+  E envanter · B tekne · K ansiklopedi · M harita · T oyuncular ve takas
   Enter sohbet · Esc menü ve ayarlar
-
-YENİ (0.7)
-  Takas: T > oyuncunun yanında Takas. İkiniz de onaylayınca değiş tokuş olur.
-  Harita: M. Gezdiğin yerler açılır, sağ üstte mini harita.
-  Ayarlar: kalite ön ayarı, kare hızı (FPS) sınırı, VSync, tam ekran, ışık/parçacık
-  ayrıntıları, arayüz boyutu. Bilgisayar zorlanırsa Ayarlar > Görüntü > Düşük.
-  24 tür canlı, yeni gerçekçi çizimler. Dikkat: mavi köpekbalığı ısırır!
 
 Kayıtlar: %APPDATA%\DerinDeniz\worlds
 Godot Engine ile yapıldı (MIT lisansı): https://godotengine.org/license

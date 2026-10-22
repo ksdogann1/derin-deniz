@@ -104,7 +104,7 @@ func _graphics_tab() -> Control:
 		Settings.fauna = x
 		_custom()))
 	v.add_child(HSeparator.new())
-	_slider(v, "Kamera yakınlığı", Settings.zoom, 1.6, 4.0, 0.1, "%.1fx", func(x):
+	_slider(v, "Kamera yakınlığı (oyunda: tekerlek / iki parmak)", Settings.zoom, Settings.ZOOM_MIN, Settings.ZOOM_MAX, 0.1, "%.1fx", func(x):
 		Settings.zoom = x
 		_changed())
 	_slider(v, "Arayüz boyutu", Settings.ui_scale, 0.7, 1.6, 0.05, "%d%%", func(x):

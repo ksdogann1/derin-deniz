@@ -55,13 +55,58 @@ const LIST: Array[Dictionary] = [
 		"min": 20, "max": 150, "weight": 0.6, "rarity": 2, "reward": 18, "speed": 6.0, "move": "drift"},
 	{"id": 223, "name": "Dev Kalamar", "tex": "dev_kalamar", "fw": 64, "fh": 120, "frames": 4, "row": 0,
 		"min": 270, "max": 318, "weight": 0.4, "rarity": 3, "reward": 40, "speed": 14.0, "move": "jelly", "light": Color(1.0, 0.85, 0.4), "light_offset": Vector2(0, 2)},
+	{"id": 224, "name": "Levrek", "tex": "levrek", "fw": 56, "fh": 28, "frames": 4, "row": 0,
+		"min": 3, "max": 80, "weight": 8.0, "rarity": 0, "reward": 4, "speed": 30.0, "move": "swim"},
+	{"id": 225, "name": "Uskumru", "tex": "uskumru", "fw": 52, "fh": 24, "frames": 4, "row": 0,
+		"min": 5, "max": 100, "weight": 8.0, "rarity": 0, "reward": 4, "speed": 40.0, "move": "swim"},
+	{"id": 226, "name": "Kırlangıç Balığı", "tex": "kirlangic", "fw": 52, "fh": 36, "frames": 4, "row": 0,
+		"min": 10, "max": 90, "weight": 5.0, "rarity": 0, "reward": 4, "speed": 14.0, "move": "bottom"},
+	{"id": 227, "name": "Papağan Balığı", "tex": "papagan", "fw": 52, "fh": 34, "frames": 4, "row": 0,
+		"min": 3, "max": 60, "weight": 3.5, "rarity": 1, "reward": 8, "speed": 20.0, "move": "swim"},
+	{"id": 228, "name": "Melek Balığı", "tex": "melek", "fw": 48, "fh": 72, "frames": 4, "row": 0,
+		"min": 5, "max": 70, "weight": 3.0, "rarity": 1, "reward": 9, "speed": 14.0, "move": "hover"},
+	{"id": 229, "name": "Aslan Balığı", "tex": "aslan", "fw": 60, "fh": 64, "frames": 4, "row": 0,
+		"min": 20, "max": 120, "weight": 1.8, "rarity": 2, "reward": 14, "speed": 10.0, "move": "hover"},
+	{"id": 230, "name": "Lambuka", "tex": "lambuka", "fw": 64, "fh": 36, "frames": 4, "row": 0,
+		"min": 15, "max": 120, "weight": 1.5, "rarity": 2, "reward": 13, "speed": 46.0, "move": "swim"},
+	{"id": 231, "name": "Ton Balığı", "tex": "ton", "fw": 80, "fh": 40, "frames": 4, "row": 0,
+		"min": 40, "max": 180, "weight": 1.2, "rarity": 2, "reward": 15, "speed": 58.0, "move": "swim"},
+	{"id": 232, "name": "Deniz Yıldızı", "tex": "deniz_yildizi", "fw": 32, "fh": 24, "frames": 4, "row": 0,
+		"min": 5, "max": 160, "weight": 4.5, "rarity": 0, "reward": 3, "speed": 5.0, "move": "crawl"},
+	{"id": 233, "name": "Istakoz", "tex": "istakoz", "fw": 52, "fh": 28, "frames": 4, "row": 0,
+		"min": 30, "max": 200, "weight": 2.2, "rarity": 1, "reward": 10, "speed": 9.0, "move": "crawl"},
+	{"id": 234, "name": "Manta Vatoz", "tex": "manta", "fw": 64, "fh": 32, "frames": 4, "row": 0,
+		"min": 30, "max": 160, "weight": 0.9, "rarity": 2, "reward": 16, "speed": 16.0, "move": "glide"},
+	{"id": 235, "name": "Çekiç Başlı Köpekbalığı", "tex": "cekic", "fw": 100, "fh": 44, "frames": 4, "row": 0,
+		"min": 60, "max": 220, "weight": 1.0, "rarity": 4, "reward": 18, "speed": 32.0, "move": "shark", "hostile": true, "attack": "bite"},
+	{"id": 236, "name": "Engerek Balığı", "tex": "engerek", "fw": 56, "fh": 36, "frames": 4, "row": 0,
+		"min": 160, "max": 318, "weight": 2.5, "rarity": 2, "reward": 14, "speed": 16.0, "move": "swim", "light": Color(0.35, 0.9, 1.0), "light_offset": Vector2(5, -9)},
+	{"id": 237, "name": "Kürek Balığı", "tex": "kurek", "fw": 128, "fh": 32, "frames": 4, "row": 0,
+		"min": 120, "max": 300, "weight": 0.45, "rarity": 3, "reward": 35, "speed": 14.0, "move": "ribbon"},
+	{"id": 238, "name": "Kristal Denizanası", "tex": "kristal_denizanasi", "fw": 32, "fh": 44, "frames": 4, "row": 0,
+		"min": 60, "max": 300, "weight": 0.06, "rarity": 5, "reward": 60, "speed": 10.0, "move": "jelly", "light": Color(0.7, 1.0, 1.0)},
+	{"id": 239, "name": "Gökkuşağı Balığı", "tex": "gokkusagi", "fw": 52, "fh": 32, "frames": 4, "row": 0,
+		"min": 3, "max": 140, "weight": 0.06, "rarity": 5, "reward": 60, "speed": 30.0, "move": "swim"},
+	{"id": 240, "name": "Hayalet Köpekbalığı", "tex": "hayalet_kopekbaligi", "fw": 96, "fh": 40, "frames": 4, "row": 0,
+		"min": 100, "max": 318, "weight": 0.05, "rarity": 5, "reward": 70, "speed": 24.0, "move": "swim", "light": Color(0.6, 0.9, 1.0)},
+	{"id": 241, "name": "Kraken Yavrusu", "tex": "kraken", "fw": 40, "fh": 36, "frames": 4, "row": 0,
+		"min": 220, "max": 318, "weight": 0.05, "rarity": 5, "reward": 80, "speed": 12.0, "move": "jelly", "light": Color(0.75, 0.4, 1.0)},
+	{"id": 242, "name": "Altın Deniz Ejderi", "tex": "ejder", "fw": 52, "fh": 36, "frames": 4, "row": 0,
+		"min": 10, "max": 120, "weight": 0.06, "rarity": 5, "reward": 60, "speed": 6.0, "move": "hover"},
+	{"id": 243, "name": "Altın Kaplumbağa", "tex": "altin_kaplumbaga", "fw": 52, "fh": 32, "frames": 4, "row": 0,
+		"min": 5, "max": 120, "weight": 0.05, "rarity": 5, "reward": 70, "speed": 14.0, "move": "swim"},
+	{"id": 244, "name": "Abis Yılanı", "tex": "abis_yilani", "fw": 96, "fh": 28, "frames": 4, "row": 0,
+		"min": 240, "max": 318, "weight": 0.05, "rarity": 5, "reward": 90, "speed": 20.0, "move": "ribbon", "light": Color(0.6, 0.3, 1.0)},
 ]
 
 ## Çizimler 2 kat çözünürlükte; oyunda bu ölçekle gösterilir
 const DRAW_SCALE := 0.5
 
-const RARITY_NAMES := ["Yaygın", "Nadir", "Çok Nadir", "Efsanevi", "Tehlikeli"]
-const RARITY_COLORS := [Color("b8c7d3"), Color("5ce67a"), Color("5ab4ff"), Color("ffcc33"), Color("ff6a5a")]
+const RARITY_NAMES := ["Yaygın", "Nadir", "Çok Nadir", "Efsanevi", "Tehlikeli", "Mitik"]
+const RARITY_COLORS := [Color("b8c7d3"), Color("5ce67a"), Color("5ab4ff"), Color("ffcc33"), Color("ff6a5a"),
+	Color("e36bff")]
+## Teknede satış fiyatı (Altın), nadirliğe göre
+const RARITY_PRICE := [6, 18, 45, 160, 40, 750]
 
 static var _by_id := {}
 static var _tex := {}
@@ -101,6 +146,14 @@ static func icon(id: int) -> Texture2D:
 	at.region = Rect2(0, int(d["row"]) * int(d["fh"]), int(d["fw"]), int(d["fh"]))
 	_icons[id] = at
 	return at
+
+
+static func price(id: int) -> int:
+	var d := get_def(id)
+	if d.has("price"):
+		return int(d["price"])
+	var r := clampi(int(d.get("rarity", 0)), 0, RARITY_PRICE.size() - 1)
+	return int(RARITY_PRICE[r]) + int(d.get("reward", 0)) * 2
 
 
 static func tint(id: int) -> Color:
